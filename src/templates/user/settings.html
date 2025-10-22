@@ -104,8 +104,9 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
-    <script>checkAuthAndRedirect(true);</script>
     <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <!-- Removed redundant inline script checkAuthAndRedirect(true) as it is correctly handled 
+         inside settings.js's DOMContentLoaded listener, preventing the ReferenceError. -->
     <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 </body>
 </html>

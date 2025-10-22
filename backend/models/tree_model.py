@@ -10,6 +10,7 @@ class TreeModel:
 
     def create_tree(self, farm_id, tree_name, age_years=None, planting_date=None):
         """Inserts a new tree record."""
+        farm_id = int(farm_id) # FIX: Ensure integer type for DB
         query = """
             INSERT INTO trees (farm_id, tree_name, age_years, planting_date)
             VALUES (%s, %s, %s, %s)
@@ -20,18 +21,21 @@ class TreeModel:
 
     def get_all_trees_by_farm(self, farm_id):
         """Retrieves all trees belonging to a specific farm."""
-        query = "SELECT * FROM trees WHERE farm_id = %s ORDER BY tree_name"
+        farm_id = int(farm_id) # FIX: Ensure integer type for DB
+        query = "SELECT tree_id, farm_id, tree_name, age_years, planting_date, created_at FROM trees WHERE farm_id = %s ORDER BY tree_name"
         params = (farm_id,)
         return self.db.execute_query(query, params)
 
     def get_tree_by_id(self, tree_id):
         """Retrieves a single tree by ID."""
-        query = "SELECT * FROM trees WHERE tree_id = %s"
+        tree_id = int(tree_id) # FIX: Ensure integer type for DB
+        query = "SELECT tree_id, farm_id, tree_name, age_years, planting_date, created_at FROM trees WHERE tree_id = %s"
         params = (tree_id,)
         return self.db.execute_query(query, params, fetch_one=True)
 
     def update_tree(self, tree_id, tree_name, age_years, planting_date):
         """Updates an existing tree record."""
+        tree_id = int(tree_id) # FIX: Ensure integer type for DB
         query = """
             UPDATE trees SET tree_name = %s, age_years = %s, planting_date = %s
             WHERE tree_id = %s
@@ -41,6 +45,7 @@ class TreeModel:
 
     def delete_tree(self, tree_id):
         """Deletes a tree record and all associated images (via CASCADE)."""
+        tree_id = int(tree_id) # FIX: Ensure integer type for DB
         query = "DELETE FROM trees WHERE tree_id = %s"
         params = (tree_id,)
         return self.db.execute_query(query, params, commit=True) is not None

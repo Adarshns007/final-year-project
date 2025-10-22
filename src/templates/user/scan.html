@@ -56,10 +56,94 @@
             border: 1px solid #ddd;
             border-radius: var(--border-radius);
         }
+        /* --- Analysis Results Section Styles --- */
         .results-section {
             margin-top: 40px;
             border-top: 2px solid #eee;
             padding-top: 20px;
+        }
+        .image-comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .image-card {
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            text-align: center;
+        }
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        /* CRITICAL FIX: Aggressive filter for visual distinction */
+        .image-card img#resultImageAnalyzed {
+            filter: sepia(0.8) contrast(1.5) hue-rotate(200deg); 
+        }
+        .image-label {
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .prediction-summary-box {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .prediction-summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .prediction-summary-header h4 {
+            margin: 0;
+            color: #d9534f; 
+        }
+        .disease-status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: #f2dede; 
+            color: #a94442; 
+            font-size: 0.8em;
+        }
+        .disease-status.healthy {
+            background-color: #dff0d8; 
+            color: #3c763d; 
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            margin: 10px 0 10px; 
+            height: 25px;
+            position: relative;
+            overflow: hidden; 
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #d9534f; 
+            border-radius: 5px;
+            text-align: right;
+            line-height: 25px;
+            color: white;
+            font-weight: bold;
+            transition: width 0.5s;
+            padding-right: 8px; 
+            box-sizing: border-box; 
+        }
+        .progress-bar.healthy {
+            background-color: #5cb85c; 
         }
         .results-item {
             display: flex;
@@ -72,6 +156,17 @@
         }
         .results-item strong {
             color: var(--primary-color);
+        }
+        .treatment-section {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid var(--secondary-color);
+            border-radius: var(--border-radius);
+        }
+        .treatment-section h4 {
+            color: var(--primary-color);
+            margin-top: 10px;
+            margin-bottom: 5px;
         }
     </style>
 </head>
@@ -115,17 +210,49 @@
             </form>
 
             <div id="resultsSection" class="results-section" style="display:none;">
-                <h3 style="margin-bottom: 15px;">Analysis Results</h3>
-                <p><strong>Predicted Disease:</strong> <span id="predictedClass"></span></p>
-                <p style="margin-bottom: 15px;"><strong>Confidence:</strong> <span id="confidenceScore"></span></p>
-
-                <div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
-                    <h4>Raw Model Output (Probabilities)</h4>
-                    <div id="rawOutputList">
-                        </div>
+                <h3 style="margin-bottom: 15px;">Scan Result</h3>
+                
+                <div class="image-comparison-grid">
+                    <div class="image-card">
+                        <img id="resultImageOriginal" src="" alt="Original Leaf Image">
+                        <div class="image-label">Original</div>
+                    </div>
+                    <div class="image-card">
+                        <img id="resultImageAnalyzed" src="" alt="Analyzed Leaf Image">
+                        <div class="image-label">Analyzed Image</div>
+                    </div>
                 </div>
+
+                <div class="prediction-summary-box">
+                    <div class="prediction-summary-header">
+                        <h4 id="predictedClassHeader"></h4>
+                        <span id="diseaseStatusTag" class="disease-status"></span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="confidenceProgressBar" class="progress-bar" style="width: 0%;">
+                            <span id="confidenceScoreText"></span>
+                        </div>
+                    </div>
+                    <p id="affectedDescription" style="font-size: 0.9em; color: #666;"></p>
+                </div>
+
+
+                <div class="treatment-section">
+                    <h3>Treatment Options</h3>
+                    
+                    <h4>Organic Treatment:</h4>
+                    <p id="organicTreatmentText"></p>
+                    
+                    <h4>Chemical Treatment:</h4>
+                    <p id="chemicalTreatmentText"></p>
+                </div>
+                
                 <div style="margin-top: 20px;">
                     <a id="viewInGalleryLink" href="/gallery" class="btn secondary">View Scan in Gallery</a>
+                </div>
+
+                <h4 style="margin-top: 25px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Probability Breakdown</h4>
+                <div id="rawOutputList">
                 </div>
             </div>
 
@@ -133,7 +260,6 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
-    <script>checkAuthAndRedirect(true);</script>
     <script src="{{ url_for('static', filename='js/api.js') }}"></script>
     <script src="{{ url_for('static', filename='js/scan.js') }}"></script>
 </body>

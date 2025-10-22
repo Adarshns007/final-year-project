@@ -60,8 +60,10 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
-    <script>checkAuthAndRedirect(true);</script>
     <script src="{{ url_for('static', filename='js/api.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/admin_diseases.js') }}"></script>
+    <!-- Removed redundant inline checkAuthAndRedirect(true) call here, 
+         as it is correctly called inside the DOMContentLoaded listener 
+         in admin_disease.js, which prevents loading order issues. -->
+    <script src="{{ url_for('static', filename='js/admin_disease.js') }}"></script>
 </body>
 </html>

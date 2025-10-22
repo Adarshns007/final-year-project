@@ -14,6 +14,7 @@ class StatisticsModel:
         Calculates the distribution of predicted diseases for a specific user within a date range.
         Returns a dictionary: {disease_name: count}.
         """
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         base_query = """
             SELECT 
                 p.predicted_class, 
@@ -35,7 +36,7 @@ class StatisticsModel:
         
         results = self.db.execute_query(base_query, tuple(params))
         
-        distribution = {row['predicted_class']: row['count'] for row in results}
+        distribution = {row['predicted_class']: row['count'] for row in results} if results else {}
         return distribution
 
     def get_user_scans_by_tree(self, user_id: int, start_date: Optional[str] = None, end_date: Optional[str] = None) -> list:
@@ -43,6 +44,7 @@ class StatisticsModel:
         Counts the number of scans per tree owned by the user.
         Returns a list of dictionaries: [{tree_name: str, count: int}].
         """
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         base_query = """
             SELECT 
                 t.tree_name, 
@@ -64,12 +66,13 @@ class StatisticsModel:
         base_query += " GROUP BY t.tree_name ORDER BY count DESC"
         
         results = self.db.execute_query(base_query, tuple(params))
-        return results
+        return results if results else []
 
     def get_user_total_scans(self, user_id: int, start_date: Optional[str] = None, end_date: Optional[str] = None) -> int:
         """
         Gets the total number of scans for a user within a date range.
         """
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         base_query = "SELECT COUNT(*) AS total FROM images WHERE user_id = %s"
         params = [user_id]
         
@@ -81,4 +84,5 @@ class StatisticsModel:
             params.append(end_date)
             
         result = self.db.execute_query(base_query, tuple(params), fetch_one=True)
-        return result['total'] if result else 0
+        # Handle None return from execute_query if DB failed
+        return result['total'] if result and 'total' in result else 0

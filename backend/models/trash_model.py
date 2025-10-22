@@ -14,6 +14,7 @@ class TrashModel:
         Moves an image to the archive. Updates status in 'images' 
         and inserts a record in 'archived_images'.
         """
+        user_id = int(user_id) # FIX: Ensure user_id is an integer
         # 1. Update status in images table (optional, but good practice)
         update_image_query = "UPDATE images SET status = 'archived' WHERE image_id = %s AND user_id = %s"
         self.db.execute_query(update_image_query, (image_id, user_id), commit=True)
@@ -27,6 +28,7 @@ class TrashModel:
         Restores an image from the archive. Deletes record in 'archived_images'
         and updates status in 'images' back to 'analyzed'.
         """
+        user_id = int(user_id) # FIX: Ensure user_id is an integer
         # 1. Delete from archive table
         delete_archive_query = "DELETE FROM archived_images WHERE image_id = %s AND user_id = %s"
         self.db.execute_query(delete_archive_query, (image_id, user_id), commit=True)
@@ -39,6 +41,7 @@ class TrashModel:
         """
         Retrieves all archived images for a user, including prediction data.
         """
+        user_id = int(user_id) # FIX: Ensure user_id is an integer
         query = """
             SELECT 
                 i.image_id, i.upload_date, i.file_path,

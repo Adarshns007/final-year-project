@@ -100,8 +100,9 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
-    <script>checkAuthAndRedirect(true);</script>
     <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <!-- Removed redundant inline script checkAuthAndRedirect(true) as it is correctly handled 
+         inside gallery.js's DOMContentLoaded listener, preventing the ReferenceError. -->
     <script src="{{ url_for('static', filename='js/gallery.js') }}"></script>
 </body>
 </html>

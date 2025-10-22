@@ -1,17 +1,13 @@
 from flask import Blueprint, request, jsonify, current_app
-from werkzeug.security import check_password_hash # Must be imported for password check
+from werkzeug.security import check_password_hash 
 from backend.models.user_model import UserModel
-from backend.services.database_service import DatabaseService # Use if user_model doesn't handle all DB ops
+from backend.services.database_service import DatabaseService 
 
-# NOTE: The jwt and datetime imports are no longer needed, as Flask-JWT-Extended handles them.
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 # Create a Flask Blueprint for authentication routes
 auth_bp = Blueprint('auth_bp', __name__)
 user_model = UserModel()
-
-# --- Utility Function for Token Management ---
-# DELETED: The complicated 'generate_auth_token' is removed and replaced by create_access_token.
 
 # --- API Routes ---
 
@@ -52,13 +48,13 @@ def signin():
 
     if user and user_model.verify_password(user['password_hash'], password):
         # 1. Login successful. Generate a token using Flask-JWT-Extended.
-        # We pass the user_id as the 'identity' of the token.
-        access_token = create_access_token(identity=user['user_id'])
+        # FIX: Explicitly cast user_id to string for JWT identity serialization.
+        access_token = create_access_token(identity=str(user['user_id']))
         
         # 2. Return the token and user data.
         return jsonify({
             "message": "Login successful",
-            "token": access_token, # THIS IS THE CRITICAL KEY for the frontend
+            "token": access_token, 
             "user": {
                 "id": user['user_id'],
                 "username": user['username'],
@@ -73,8 +69,6 @@ def signin():
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
     """Handles user logout (client-side token removal)."""
-    # For JWTs, logout is mainly clearing the client-side token.
-    # The API confirms the successful operation.
     return jsonify({"message": "Logged out successfully"}), 200
 
 
@@ -84,7 +78,5 @@ def forgot_password():
     email = request.get_json().get('email')
     if not email:
         return jsonify({"message": "Email is required"}), 400
-    
-    # In a full project, logic to send an email/token goes here
     
     return jsonify({"message": "If the email is registered, a password reset link has been sent."}), 200

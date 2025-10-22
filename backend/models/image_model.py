@@ -14,6 +14,7 @@ class ImageModel:
         Inserts a new image record.
         Returns the new image_id on success.
         """
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         query = """
             INSERT INTO images (user_id, file_path, tree_id, status)
             VALUES (%s, %s, %s, %s)
@@ -39,6 +40,7 @@ class ImageModel:
         """
         Retrieves image and its prediction details for a specific user.
         """
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         query = """
             SELECT 
                 i.*, 
@@ -69,6 +71,7 @@ class ImageModel:
         """
         Retrieves a list of all analyzed images for the user's gallery.
         """
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         query = """
             SELECT 
                 i.image_id, i.upload_date, i.file_path, i.tree_id,
@@ -83,14 +86,12 @@ class ImageModel:
         params = (user_id,)
         return self.db.execute_query(query, params)
 
-    # Note: Methods for updating status, deleting, and handling pending images 
-    # would be added here to match the full Mango-Lens functionality.
-    # ... (existing ImageModel code)
-
     def get_images_by_tree(self, tree_id):
         """
         Retrieves all analyzed images linked to a specific tree_id.
         """
+        # No user_id cast needed here, but ensure tree_id is integer
+        tree_id = int(tree_id)
         query = """
             SELECT 
                 i.image_id, i.upload_date, i.file_path,

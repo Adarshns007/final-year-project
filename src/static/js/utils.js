@@ -27,7 +27,6 @@ function decodeJwt(token) {
  * @returns {boolean} True if logged in, false otherwise.
  */
 function isLoggedIn() {
-    // Ensure window.getAuthToken is available before calling it
     if (typeof window.getAuthToken !== 'function') {
         console.error("isLoggedIn: window.getAuthToken is not defined. Check script loading order.");
         return false;
@@ -37,30 +36,36 @@ function isLoggedIn() {
         return false;
     }
     const payload = decodeJwt(token);
-    // Basic check: Token exists and has a payload, and is not expired
     if (payload && payload.exp) {
-        const currentTime = Date.now() / 1000; // current time in seconds
+        const currentTime = Date.now() / 1000; 
         return payload.exp > currentTime;
     }
-    return !!payload; // Return true if payload exists, false otherwise
+    return !!payload;
 }
 
 /**
  * Checks authentication status and redirects if necessary.
- * IMPORTANT: Relies on isLoggedIn()
+ * FIX: Uses setTimeout to mitigate the race condition upon new page navigation.
  * @param {boolean} redirectToLoginIfLoggedOut - If true, redirects to /login if not authenticated.
  * @param {boolean} redirectToDashboardIfLoggedIn - If true, redirects to /dashboard if authenticated.
  */
 function checkAuthAndRedirect(redirectToLoginIfLoggedOut = false, redirectToDashboardIfLoggedIn = false) {
-    if (isLoggedIn()) {
-        if (redirectToDashboardIfLoggedIn && window.location.pathname !== '/dashboard') {
-            window.location.href = '/dashboard';
+    // CRITICAL FIX: The timeout ensures the browser has time to stabilize 
+    // the local storage reading after page navigation.
+    setTimeout(() => {
+        if (isLoggedIn()) {
+            if (redirectToDashboardIfLoggedIn && window.location.pathname !== '/dashboard') {
+                window.location.href = '/dashboard';
+            }
+        } else {
+            if (redirectToLoginIfLoggedOut) {
+                 // Only redirect if we are NOT already on the login/signup page
+                if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
+                    window.location.href = '/login';
+                }
+            }
         }
-    } else {
-        if (redirectToLoginIfLoggedOut && window.location.pathname !== '/login') {
-            window.location.href = '/login';
-        }
-    }
+    }, 100); // 100ms delay is necessary for stability
 }
 
 // --- Validation Utilities (REQUIRED FOR auth.js) ---
@@ -82,4 +87,32 @@ function validateEmail(email) {
  */
 function validatePassword(password) {
     return password.length >= 6;
+}
+
+// --- CRITICAL FIX: Add missing displayMessage utility function ---
+/**
+ * Displays a message in the designated container.
+ * @param {string} message - The message content.
+ * @param {boolean} isError - True if it's an error message (red text).
+ * @param {HTMLElement | null} container - Optional specific container element. Defaults to 'message-container'.
+ */
+function displayMessage(message, isError = false, container = null) {
+    const messageContainer = container || document.getElementById('message-container');
+    
+    if (messageContainer) {
+        messageContainer.textContent = message;
+        messageContainer.style.color = isError ? 'red' : 'green';
+        messageContainer.style.padding = '10px';
+        messageContainer.style.border = isError ? '1px solid red' : '1px solid green';
+        messageContainer.style.display = message ? 'block' : 'none';
+        
+        if (!isError && message.length > 0) {
+            setTimeout(() => {
+                messageContainer.textContent = '';
+                messageContainer.style.display = 'none';
+            }, 3000);
+        }
+    } else {
+        console.warn("Message container not found. Message:", message);
+    }
 }

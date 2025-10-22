@@ -33,6 +33,15 @@
             color: var(--text-color);
             border-bottom: 1px dashed #eee;
         }
+        /* Specific style for the Admin Link to give it separation */
+        .sidebar #adminLink {
+            margin-top: 15px;
+            padding: 10px 0;
+            font-weight: bold;
+            color: var(--primary-color);
+            border-top: 2px solid var(--secondary-color);
+            border-bottom: none;
+        }
         .main-content h2 {
             color: var(--primary-color);
             margin-bottom: 20px;
@@ -85,7 +94,8 @@
             <h1>LeafGuard Dashboard</h1>
         </div>
         <nav class="nav-links">
-            <span id="welcome-user">Hello, User!</span>
+            <!-- FIX: Use an empty span. JS will dynamically set the user's name/email. -->
+            <span id="welcome-user"></span> 
             <button id="logoutButton" class="btn secondary">Logout</button>
         </nav>
     </header>
@@ -94,10 +104,14 @@
         <aside class="sidebar">
             <h3>Navigation</h3>
             <a href="/dashboard" class="active">Dashboard Overview</a>
-            <a href="/scan" class="btn primary" style="margin: 10px 0;">New Scan</a>
+            <!-- Added ID for reliable JS navigation handling -->
+            <a href="/scan" id="newScanLink" class="btn primary" style="margin: 10px 0; text-align: center;">New Scan</a>
+            
+            <!-- CRITICAL FIX: Admin Link element placed at the bottom to guarantee JS finds it -->
+            <a href="/admin/dashboard" id="adminLink" style="display:none;">Admin Panel</a>
+            
             <a href="/gallery">Gallery & History</a>
             <a href="/settings">Settings</a>
-            <a href="/admin/dashboard" id="adminLink" style="display:none;">Admin Panel</a>
         </aside>
 
         <main class="main-content">

@@ -14,7 +14,6 @@ class UserModel:
         Inserts a new user into the database.
         Returns the new user_id on success, or None on failure.
         """
-        # Hash the password before storing it
         password_hash = generate_password_hash(password)
         
         query = """
@@ -23,7 +22,6 @@ class UserModel:
         """
         params = (username, email, password_hash, role, is_verified)
         
-        # execute_query returns lastrowid on successful INSERT (commit=True)
         user_id = self.db.execute_query(query, params, commit=True)
         return user_id
 
@@ -31,7 +29,7 @@ class UserModel:
         """
         Retrieves a user record by email.
         """
-        query = "SELECT * FROM users WHERE email = %s"
+        query = "SELECT user_id, username, email, password_hash, role, created_at, is_verified FROM users WHERE email = %s"
         params = (email,)
         return self.db.execute_query(query, params, fetch_one=True)
 
@@ -39,7 +37,8 @@ class UserModel:
         """
         Retrieves a user record by user_id.
         """
-        query = "SELECT * FROM users WHERE user_id = %s"
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
+        query = "SELECT user_id, username, email, password_hash, role, created_at, is_verified FROM users WHERE user_id = %s"
         params = (user_id,)
         return self.db.execute_query(query, params, fetch_one=True)
 
@@ -53,16 +52,16 @@ class UserModel:
         """
         Updates the is_verified status for a user.
         """
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         query = "UPDATE users SET is_verified = %s WHERE user_id = %s"
         params = (status, user_id)
-        # Execute query without expecting results, but checking for success via None/Error
         return self.db.execute_query(query, params, commit=True) is not None
 
-# Add other CRUD methods here as needed for user management (e.g., update_password, delete_user)
     def update_user_profile(self, user_id, username):
         """
         Updates a user's username.
         """
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         query = "UPDATE users SET username = %s WHERE user_id = %s"
         params = (username, user_id)
         return self.db.execute_query(query, params, commit=True) is not None
@@ -71,6 +70,7 @@ class UserModel:
         """
         Updates a user's password using the new password hash.
         """
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         new_password_hash = generate_password_hash(new_password)
         query = "UPDATE users SET password_hash = %s WHERE user_id = %s"
         params = (new_password_hash, user_id)
@@ -80,6 +80,7 @@ class UserModel:
         """
         Retrieves user details needed for the settings page.
         """
-        query = "SELECT user_id, username, email, role, is_verified FROM users WHERE user_id = %s"
+        # user_id = int(user_id) # REMOVED REDUNDANT CAST
+        query = "SELECT user_id, username, email, role, is_verified, created_at FROM users WHERE user_id = %s"
         params = (user_id,)
         return self.db.execute_query(query, params, fetch_one=True)

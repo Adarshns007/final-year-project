@@ -14,6 +14,7 @@ class AdminModel:
 
     def get_all_users(self):
         """Retrieves all users with limited fields (excluding password hash)."""
+        # FIX: Explicitly include all expected columns for users table queries
         query = "SELECT user_id, username, email, role, created_at, is_verified FROM users ORDER BY created_at DESC"
         return self.db.execute_query(query)
 
@@ -43,6 +44,11 @@ class AdminModel:
         params = (limit,)
         results = self.db.execute_query(query, params)
         
+        # Handle None results gracefully in Python
+        if results is None:
+            current_app.logger.error("Failed to run disease distribution query.")
+            return {}
+
         # Initialize distribution map with 0 for all classes for clean chart output
         distribution = {cls: 0 for cls in self.classes}
         for row in results:

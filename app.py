@@ -14,7 +14,6 @@ from backend.ml_model.predict_service import PredictService
 from backend.api.auth_routes import auth_bp
 from backend.api.user_routes import user_bp
 from backend.api.scan_routes import scan_bp 
-from backend.api.gallery_routes import gallery_bp
 from backend.api.admin_routes import admin_bp
 from backend.api.trash_routes import trash_bp
 
@@ -47,18 +46,29 @@ def create_app(config_class=Config):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(scan_bp, url_prefix='/api/scan')
-    app.register_blueprint(gallery_bp, url_prefix='/api/gallery')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(trash_bp, url_prefix='/api/trash')
 
     # --- 2. Load Machine Learning Model ---
     app.logger.info("Starting ML model loading...")
-    ModelLoader.load_model(app.config['MODEL_PATH'])
-    app.logger.info("ML model successfully loaded.")
+    model_loaded = False
+    
+    try:
+        ModelLoader.load_model(app.config['MODEL_PATH'])
+        app.logger.info("ML model successfully loaded.")
+        model_loaded = True
+    except RuntimeError as e:
+        app.logger.error(f"CRITICAL: ML Model failed to load: {e}. Scan functionality will be disabled.")
+        # We allow the app to continue, but model_loaded is False
 
     # --- 3. Initialize Services requiring context/config ---
     with app.app_context():
-        scan_routes.predict_service = PredictService()
+        # FIX: Only initialize PredictService IF the model loaded
+        if model_loaded:
+            scan_routes.predict_service = PredictService()
+        else:
+            scan_routes.predict_service = None # Set to None for graceful failure handling in scan_routes
+            
         admin_routes_module.admin_model = AdminModel(
             disease_classes=app.config.get('DISEASE_CLASSES')
         )
@@ -115,6 +125,11 @@ def create_app(config_class=Config):
     def admin_diseases_page():
         return render_template('user/admin/diseases.html')
 
+    # FIX: Add missing admin users route
+    @app.route('/admin/users')
+    def admin_users_page():
+        return render_template('user/admin/users.html') 
+
     # --- User Utility Routes ---
 
     @app.route('/user/statistic')
@@ -140,7 +155,7 @@ def create_app(config_class=Config):
     def not_found(error):
         return jsonify({"error": "Not Found", "message": "The requested URL was not found on the server."}), 404
         
-    # This MUST be the single and final registration for closing DB connections
+    # CRITICAL: Register the non-pooled teardown function
     app.teardown_appcontext(DatabaseService.close_db_connection)
 
     # Final return statement must be here

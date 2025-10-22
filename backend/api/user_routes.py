@@ -17,26 +17,32 @@ feedback_model = FeedbackModel()
 statistics_model = StatisticsModel()
 user_model = UserModel()
 
-# --- Authentication Decorator (FIXED) ---
+# --- Authentication Decorator (FINAL FIX APPLIED HERE) ---
 def token_required(fn):
     """
     Decorator that protects API endpoints. 
-    Uses Flask-JWT-Extended's @jwt_required to validate the token 
-    and retrieves the user identity for the route function.
+    Enforces that the user ID passed to the route function is a Python INTEGER.
     """
     @wraps(fn)
     @jwt_required() 
     def wrapper(*args, **kwargs):
-        # Retrieve the identity (user_id) from the validated token payload
-        current_user_id = get_jwt_identity()
+        try:
+            # 1. Retrieve the identity (which may be a string from the JWT)
+            current_id_str = get_jwt_identity()
+            # 2. CRITICAL FIX: Explicitly cast to integer here to prevent repeated crash
+            current_user_id = int(current_id_str) 
+        except Exception as e:
+            current_app.logger.error(f"JWT Identity Error: {e}")
+            return jsonify({"message": "Invalid authentication token identity format."}), 401
         
-        # Pass the user ID as current_user_id keyword argument to the route function
+        # Pass the verified integer user ID to the route function
         kwargs['current_user_id'] = current_user_id
         return fn(*args, **kwargs)
     return wrapper
 
 # ==============================================================================
 # --- Farm Routes (/api/user/farm) ---
+# NOTE: Removed int() casting from models as it is now done here.
 # ==============================================================================
 
 @user_bp.route('/farm', methods=['POST'])
@@ -61,8 +67,13 @@ def create_farm_route(current_user_id):
 def get_farms_route(current_user_id):
     """Retrieves all farms for the current user."""
     farms = farm_model.get_all_user_farms(current_user_id)
+    
+    # FIX: Ensure farms is an iterable (list) to prevent AttributeError/TypeError crash.
+    if farms is None:
+        farms = []
+        current_app.logger.error(f"Database query failed for user {current_user_id} when fetching farms. Returning empty list.")
+    
     # Ensure dates/times are serializable if they exist in the farm objects
-    # This assumes farm_model returns raw objects, but it's safe to check here
     for farm in farms:
         if farm.get('created_at'):
             farm['created_at'] = farm['created_at'].isoformat()
@@ -133,6 +144,12 @@ def get_trees_by_farm_route(farm_id, current_user_id):
         return jsonify({"message": "Farm not found or unauthorized"}), 404
         
     trees = tree_model.get_all_trees_by_farm(farm_id)
+    
+    # FIX: Handle potential NoneType crash if DB query failed
+    if trees is None:
+        trees = []
+        current_app.logger.error(f"Database query failed for user {current_user_id} when fetching trees for farm {farm_id}. Returning empty list.")
+        
     return jsonify(trees), 200
 
 @user_bp.route('/tree/<int:tree_id>', methods=['GET', 'PUT', 'DELETE'])
@@ -215,6 +232,12 @@ def get_tree_images_route(tree_id, current_user_id):
 
     # 2. Fetch Images
     images = image_model.get_images_by_tree(tree_id)
+    
+    # FIX: Handle potential NoneType crash if DB query failed
+    if images is None:
+        images = []
+        current_app.logger.error(f"Database query failed for user {current_user_id} when fetching tree images. Returning empty list.")
+
 
     # 3. Format URLs and Dates
     for image in images:
@@ -235,6 +258,11 @@ def get_tree_images_route(tree_id, current_user_id):
 def get_user_profile_route(current_user_id):
     """Retrieves current user's profile information for the settings page."""
     user_profile = user_model.get_user_profile(current_user_id)
+    
+    # FIX: Handle potential NoneType crash if DB query failed
+    if user_profile is None:
+        return jsonify({"message": "Failed to retrieve user profile data due to a server error."}), 500
+        
     if user_profile:
         # Remove sensitive data like password_hash before returning
         user_profile.pop('password_hash', None) 
@@ -315,6 +343,10 @@ def get_user_statistics_route(current_user_id):
 
     try:
         total_scans = statistics_model.get_user_total_scans(current_user_id, start_date, end_date)
+        
+        # FIX: Check if the model failed the initial query
+        if total_scans is None:
+            return jsonify({"message": "Failed to retrieve statistics data due to a server error."}), 500
         
         if total_scans == 0:
             # Return empty data if no scans match the filter

@@ -5,20 +5,31 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Ensure user is authenticated and redirect if not.
-    // This function relies on getAuthToken() from api.js
     checkAuthAndRedirect(true); 
 
-    // After checkAuthAndRedirect, the token should be in localStorage if we're on dashboard.
-    const token = getAuthToken(); // Directly retrieve the token
-
+    const token = getAuthToken();
+    let userPayload = null;
+    
     if (token) {
-        const userPayload = decodeJwt(token);
+        userPayload = decodeJwt(token);
 
         if (userPayload) {
-            document.getElementById('welcome-user').textContent = `Hello, ${userPayload.username || userPayload.email}!`;
+            // FIX: Prioritize username, then email, then default to 'User'
+            const displayUsername = userPayload.username || userPayload.email || 'User';
+            document.getElementById('welcome-user').textContent = `Hello, ${displayUsername}!`;
+            
+            // CRITICAL CHECK: Show admin link if role is correctly retrieved
             if (userPayload.role === 'admin') {
-                document.getElementById('adminLink').style.display = 'block';
+                // FIX: Ensure Admin Link is displayed
+                const adminLink = document.getElementById('adminLink');
+                if (adminLink) {
+                     adminLink.style.display = 'block';
+                }
             }
+        } else {
+             // If payload is invalid/expired, log out
+            AuthAPI.logout();
+            return;
         }
         
         // Load data only if token is confirmed present
@@ -26,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners();
     } else {
         // Fallback: If for some reason token is not found here, redirect.
-        // This *shouldn't* happen if checkAuthAndRedirect worked, but good for robustness.
         console.error("Authentication token not found on dashboard load. Redirecting.");
         window.location.href = '/login';
     }
@@ -123,6 +133,15 @@ function setupEventListeners() {
         // Call the logout function from api.js
         AuthAPI.logout();
     });
+
+    // --- FIX: Force Redirection for New Scan Button (Bypasses link blockers) ---
+    const newScanLink = document.getElementById('newScanLink');
+    if (newScanLink) {
+        newScanLink.addEventListener('click', (e) => {
+            e.preventDefault(); // Stop default navigation
+            window.location.href = '/scan'; // Force JavaScript navigation
+        });
+    }
 
     // --- Add Farm Modal and Form ---
     const addFarmModal = document.getElementById('addFarmModal');

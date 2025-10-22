@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafGuard - Trash Bin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .trash-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .trash-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .trash-card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid #f0f0f0;
+        }
+        .trash-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+            filter: grayscale(80%); /* Visual indication it's archived */
+        }
+        .card-details {
+            padding: 15px;
+            text-align: center;
+        }
+        .card-details h4 {
+            color: #cc0000; /* Reddish for archived status */
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <h1>Archived Scans (Trash Bin)</h1>
+        <a href="/dashboard" class="btn secondary">Back to Dashboard</a>
+    </header>
+
+    <div class="content-wrapper trash-container">
+        <h2 style="color: var(--primary-color); margin-bottom: 20px;">Images Moved to Trash</h2>
+        
+        <div id="message-container" class="message-container" style="margin-bottom: 20px;"></div>
+
+        <div id="trashGrid" class="trash-grid">
+            <p style="grid-column: 1 / -1;">Loading archived images...</p>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script>checkAuthAndRedirect(true);</script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/user_trash.js') }}"></script>
+</body>
+</html>

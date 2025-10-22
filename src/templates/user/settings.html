@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafGuard - Settings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .settings-layout {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 30px;
+            max-width: 900px;
+            margin: 40px auto;
+        }
+        .settings-nav a {
+            display: block;
+            padding: 10px 15px;
+            text-decoration: none;
+            color: var(--text-color);
+            border-left: 3px solid transparent;
+            margin-bottom: 5px;
+        }
+        .settings-nav a.active {
+            border-left: 3px solid var(--primary-color);
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        .settings-section {
+            background-color: var(--card-background);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        .settings-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <h1>User Settings</h1>
+        <a href="/dashboard" class="btn secondary">Back to Dashboard</a>
+    </header>
+
+    <div class="content-wrapper settings-layout">
+        <aside class="settings-nav">
+            <a href="#account" class="active">Account</a>
+            <a href="#security">Security</a>
+            <a href="#preferences">Preferences</a>
+        </aside>
+
+        <main class="settings-content">
+            <section id="account" class="settings-section">
+                <h2>Account Details</h2>
+                <div id="account-message" class="message-container" style="margin-bottom: 15px;"></div>
+                
+                <form id="updateAccountForm">
+                    <div class="form-group">
+                        <label for="currentEmail">Current Email</label>
+                        <input type="email" id="currentEmail" value="loading@leafguard.com" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUsername">Username</label>
+                        <input type="text" id="newUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newEmail">New Email (Requires Verification)</label>
+                        <input type="email" id="newEmail" placeholder="Enter new email address">
+                    </div>
+                    <button type="submit" class="btn primary">Save Account Changes</button>
+                </form>
+            </section>
+            
+            <section id="security" class="settings-section" style="margin-top: 30px;">
+                <h2>Security</h2>
+                <div id="security-message" class="message-container" style="margin-bottom: 15px;"></div>
+
+                <form id="updatePasswordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmNewPassword">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" required>
+                    </div>
+                    <button type="submit" class="btn primary">Change Password</button>
+                </form>
+            </section>
+            
+            <section id="preferences" class="settings-section" style="margin-top: 30px;">
+                <h2>Preferences</h2>
+                <p>Theme selection, notifications, and other user preferences will go here.</p>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script>checkAuthAndRedirect(true);</script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+</body>
+</html>

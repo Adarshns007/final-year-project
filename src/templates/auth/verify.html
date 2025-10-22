@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafGuard - Verify Account</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Reuse styles from other auth pages */
+        .auth-container {
+            max-width: 450px;
+            margin: 80px auto;
+            padding: 30px;
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        .auth-container h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        /* Style for the 6-digit code input (using flexbox for horizontal boxes) */
+        .code-inputs {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .code-inputs input {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            font-size: 1.5rem;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+        }
+        .auth-footer {
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        /* Style for the message div */
+        #message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h2>Verify Your Account</h2>
+        <p style="margin-bottom: 25px;">Please enter the 6-digit verification code sent to your email address.</p>
+
+        <div id="message" style="color: red;"></div>
+        
+        <form id="verifyForm">
+            
+            <div class="code-inputs" id="codeInputs">
+                <input type="text" maxlength="1" name="code1" id="code1" required>
+                <input type="text" maxlength="1" name="code2" id="code2" required>
+                <input type="text" maxlength="1" name="code3" id="code3" required>
+                <input type="text" maxlength="1" name="code4" id="code4" required>
+                <input type="text" maxlength="1" name="code5" id="code5" required>
+                <input type="text" maxlength="1" name="code6" id="code6" required>
+            </div>
+            
+            <button type="submit" class="btn primary" style="width: 100%;">Verify Account</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Didn't receive the code?</p>
+            <button id="resendCodeBtn" class="btn secondary" style="width: 100%; margin-top: 5px;">Resend Code</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script> 
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script> 
+    <script src="{{ url_for('static', filename='js/verify.js') }}"></script> </body>
+</html>

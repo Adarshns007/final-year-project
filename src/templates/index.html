@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafGuard - Mango Leaf Disease Classifier</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/icons/logo.png') }}" type="image/png">
+    <meta name="description" content="AI-powered tool for identifying mango leaf diseases.">
+</head>
+<body>
+    <header class="main-header">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/icons/logo.png') }}" alt="LeafGuard Logo">
+            <h1>LeafGuard</h1>
+        </div>
+        <nav class="nav-links">
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+            <a href="/login">Login</a>
+            <a href="/signup" class="btn primary">Sign Up</a>
+        </nav>
+    </header>
+
+    <main class="content-wrapper">
+        <section id="hero" class="hero-section">
+            <h2>Protect Your Harvest with Smart AI Scanning</h2>
+            <p>Instantly diagnose mango leaf diseases using our state-of-the-art CNN model.</p>
+            <a href="/login" class="btn secondary">Get Started Now</a>
+        </section>
+
+        <section id="features" class="feature-section">
+            <h3>Key Features</h3>
+            <div class="feature-list">
+                <div class="feature-card">
+                    <h4>Rapid Scanning</h4>
+                    <p>Upload a leaf image and get results in seconds.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Farm Management</h4>
+                    <p>Organize scans by farm and individual tree.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Disease Tracking</h4>
+                    <p>View historical data and statistics on disease outbreaks.</p>
+                </div>
+            </div>
+        </section>
+        
+        </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 LeafGuard Project. All rights reserved.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+</body>
+</html>

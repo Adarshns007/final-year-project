@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafGuard - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Dashboard specific styles */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 30px;
+            padding-top: 20px;
+        }
+        .sidebar {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+        .sidebar h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        .sidebar a {
+            display: block;
+            padding: 10px 0;
+            text-decoration: none;
+            color: var(--text-color);
+            border-bottom: 1px dashed #eee;
+        }
+        .main-content h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        .farm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .farm-card, .analysis-card {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border-left: 5px solid var(--primary-color);
+        }
+        .farm-card h4 {
+            margin-bottom: 10px;
+        }
+        .recent-scans-list {
+            list-style: none;
+            padding: 0;
+        }
+        .recent-scans-list li {
+            padding: 10px 0;
+            border-bottom: 1px dashed #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .recent-scans-list li:last-child {
+            border-bottom: none;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: white;
+            background-color: #f0ad4e; /* Default: Yellow/Orange */
+        }
+        .status-badge.healthy {
+            background-color: #5cb85c; /* Green */
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="logo">
+            <h1>LeafGuard Dashboard</h1>
+        </div>
+        <nav class="nav-links">
+            <span id="welcome-user">Hello, User!</span>
+            <button id="logoutButton" class="btn secondary">Logout</button>
+        </nav>
+    </header>
+
+    <div class="content-wrapper dashboard-layout">
+        <aside class="sidebar">
+            <h3>Navigation</h3>
+            <a href="/dashboard" class="active">Dashboard Overview</a>
+            <a href="/scan" class="btn primary" style="margin: 10px 0;">New Scan</a>
+            <a href="/gallery">Gallery & History</a>
+            <a href="/settings">Settings</a>
+            <a href="/admin/dashboard" id="adminLink" style="display:none;">Admin Panel</a>
+        </aside>
+
+        <main class="main-content">
+            <section>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>My Farms</h2>
+                    <button id="addFarmButton" class="btn primary">+ Add New Farm</button>
+                </div>
+                <div id="farmsContainer" class="farm-grid">
+                    <p>Loading farms...</p>
+                    </div>
+            </section>
+
+            <section>
+                <h2>Recent Scan History</h2>
+                <div id="recentScansContainer" class="analysis-card">
+                    <ul id="recentScansList" class="recent-scans-list">
+                        <p>Loading recent scans...</p>
+                        </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <div id="addFarmModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>Add New Farm</h3>
+            <form id="addFarmForm">
+                <div class="form-group">
+                    <label for="newFarmName">Farm Name</label>
+                    <input type="text" id="newFarmName" required>
+                </div>
+                <div class="form-group">
+                    <label for="newFarmLocation">Location Details (Optional)</label>
+                    <input type="text" id="newFarmLocation">
+                </div>
+                <button type="submit" class="btn primary">Save Farm</button>
+                <button type="button" class="btn secondary" onclick="document.getElementById('addFarmModal').style.display='none'">Cancel</button>
+                <div id="farmMessage" style="margin-top: 10px;"></div>
+            </form>
+        </div>
+    </div>
+    <style>
+        /* Basic Modal Styling */
+        .modal {
+            display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); 
+        }
+        .modal-content {
+            background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: var(--border-radius);
+        }
+    </style>
+
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>  
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script> 
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

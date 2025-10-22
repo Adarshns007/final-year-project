@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafGuard - Scan Gallery</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .gallery-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .gallery-card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .gallery-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .gallery-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        .card-details {
+            padding: 15px;
+        }
+        .card-details h4 {
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        .status-badge.healthy { background-color: #5cb85c; }
+        .status-badge.default { background-color: #f0ad4e; } /* Non-healthy diseases */
+
+        /* Modal for Image Detail View */
+        .modal {
+            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8);
+        }
+        .modal-content-lg {
+            background-color: #fefefe; margin: 5% auto; padding: 20px; border-radius: var(--border-radius); width: 90%; max-width: 1000px; 
+            display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;
+        }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        .close-btn:hover, .close-btn:focus { color: #000; text-decoration: none; cursor: pointer; }
+        .modal-image { max-width: 100%; height: auto; border-radius: var(--border-radius); }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <h1>Scan Gallery & History</h1>
+        <a href="/dashboard" class="btn secondary">Back to Dashboard</a>
+    </header>
+
+    <div class="content-wrapper gallery-container">
+        <h2 style="color: var(--primary-color); margin-bottom: 20px;">All Analyzed Images</h2>
+        
+        <div id="message-container" class="message-container" style="margin-bottom: 20px;"></div>
+
+        <div id="galleryGrid" class="gallery-grid">
+            <p style="grid-column: 1 / -1;">Loading scan history...</p>
+        </div>
+    </div>
+    
+    <div id="imageDetailModal" class="modal">
+        <div class="modal-content-lg">
+            <span class="close-btn">&times;</span>
+            <div class="modal-left">
+                <img id="modalImage" class="modal-image" src="" alt="Analyzed Leaf Image">
+                <p style="text-align: center; margin-top: 10px; font-style: italic;">Original Upload</p>
+            </div>
+            <div class="modal-right card-details">
+                <h3>Scan Details - ID: <span id="modalImageId"></span></h3>
+                <hr style="margin: 10px 0;">
+                <p><strong>Farm:</strong> <span id="modalFarmName"></span></p>
+                <p><strong>Tree:</strong> <span id="modalTreeName"></span></p>
+                <p><strong>Analysis Date:</strong> <span id="modalAnalysisDate"></span></p>
+                <p style="margin-top: 20px;"><strong>Predicted Disease:</strong> 
+                    <span id="modalPredictedClass" class="status-badge"></span>
+                </p>
+                <p><strong>Confidence:</strong> <span id="modalConfidenceScore"></span></p>
+
+                <h4 style="margin-top: 25px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Probability Breakdown</h4>
+                <div id="modalRawOutputList">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script>checkAuthAndRedirect(true);</script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/gallery.js') }}"></script>
+</body>
+</html>

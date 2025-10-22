@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafGuard - Statistics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+        .stats-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .stat-card {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        .stat-card h3 {
+            color: var(--primary-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        #diseaseChart, #treeScanChart {
+            height: 300px; /* Placeholder for chart library integration */
+            background-color: #f7f7f7;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <h1>User Statistics & Reports</h1>
+        <a href="/dashboard" class="btn secondary">Back to Dashboard</a>
+    </header>
+
+    <div class="content-wrapper stats-container">
+        <h2 style="color: var(--primary-color); margin-bottom: 20px;">Your Analysis Overview</h2>
+
+        <div id="message-container" class="message-container" style="margin-bottom: 20px;"></div>
+
+        <div style="margin-bottom: 30px;">
+            <strong>Filter Period:</strong> 
+            <input type="date" id="startDate"> to <input type="date" id="endDate">
+            <button class="btn primary" id="applyFilter">Apply Filter</button>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Disease Distribution (All Time)</h3>
+                <div id="diseaseChart">Chart placeholder...</div>
+                <ul id="diseaseLegend" style="list-style: none; padding-top: 15px;"></ul>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Scans by Tree</h3>
+                <div id="treeScanChart">Chart placeholder...</div>
+                <ul id="treeScanLegend" style="list-style: none; padding-top: 15px;"></ul>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script>checkAuthAndRedirect(true);</script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/user_statistic.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+Flask==2.3.3
+gunicorn
+Flask-JWT-Extended # Required for authentication and token management
+mysql-connector-python
+tensorflow==2.20.0
+numpy
+Pillow # Python Imaging Library for image pre-processing

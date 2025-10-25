@@ -5,11 +5,28 @@
 const galleryGrid = document.getElementById('galleryGrid');
 const detailModal = document.getElementById('imageDetailModal');
 const closeBtn = document.querySelector('.close-btn');
+const archiveButton = document.getElementById('archiveButton');
+
+// Define Trash API Call (using apiCall helper)
+const TrashAPI = {
+    archiveImage: (imageId) => apiCall(`/api/trash/archive/${imageId}`, 'POST'),
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     checkAuthAndRedirect(true); 
     loadGalleryImages();
     setupModalListeners();
+    
+    // FIX: Check URL for image ID parameter and open modal immediately
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialImageId = urlParams.get('id');
+    
+    if (initialImageId) {
+        // Use a slight delay to ensure the DOM and event listeners are fully ready
+        setTimeout(() => {
+            openImageDetail(initialImageId);
+        }, 200); 
+    }
 });
 
 /**
@@ -17,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function loadGalleryImages() {
     try {
-        const images = await UserAPI.getGallery();
+        const images = await apiCall('/api/gallery/', 'GET');
         renderGallery(images);
     } catch (error) {
         galleryGrid.innerHTML = `<p style="grid-column: 1 / -1; color:red;">Failed to load gallery data: ${error.message}</p>`;
@@ -39,7 +56,7 @@ function renderGallery(images) {
     images.forEach(image => {
         const card = document.createElement('div');
         card.className = 'gallery-card';
-        card.setAttribute('data-image-id', image.image_id); // Store ID for detail fetch
+        card.setAttribute('data-image-id', image.image_id); 
         
         const statusClass = image.predicted_class === 'Healthy' ? 'healthy' : 'default';
         const dateStr = new Date(image.upload_date).toLocaleDateString();
@@ -49,12 +66,23 @@ function renderGallery(images) {
             <div class="card-details">
                 <h4>${image.predicted_class}</h4>
                 <p>Tree: ${image.tree_name || 'Quick Scan'}</p>
+                <p style="font-size: 0.9em;">Conf: ${(image.confidence_score * 100).toFixed(1)}%</p>
                 <p style="font-size: 0.9em; color: #777;">Date: ${dateStr}</p>
                 <span class="status-badge ${statusClass}">${image.predicted_class}</span>
             </div>
         `;
         
-        card.addEventListener('click', () => openImageDetail(image.image_id));
+        // Ensure the click listener reliably reads the ID from the card element
+        card.addEventListener('click', (event) => {
+            const clickedCard = event.currentTarget; 
+            const imageId = clickedCard.getAttribute('data-image-id');
+            
+            if (imageId) {
+                openImageDetail(imageId);
+            } else {
+                console.error("CRITICAL: Image ID not found on clicked card.");
+            }
+        });
         galleryGrid.appendChild(card);
     });
 }
@@ -64,19 +92,21 @@ function renderGallery(images) {
  * @param {number} imageId - The ID of the image to display.
  */
 async function openImageDetail(imageId) {
+    document.getElementById('archiveMessage').textContent = '';
+    
     try {
-        // Since we don't have a separate endpoint for single image detail 
-        // with prediction *and* raw data yet, we'll implement a simple API call 
-        // to a dedicated detail route that should be created in the backend 
-        // (e.g., /api/user/gallery/<imageID>). 
-        // For now, we assume a detail endpoint exists:
-        const detail = await apiCall(`/api/user/gallery/${imageId}`, 'GET', null, true);
+        const detail = await apiCall(`/api/gallery/${imageId}`, 'GET', null, true); 
+        
+        if (!detail) {
+            throw new Error(`API returned no data for Image ID: ${imageId}.`);
+        }
         
         // Populate modal with fetched data
         document.getElementById('modalImage').src = detail.file_path;
         document.getElementById('modalImageId').textContent = detail.image_id;
         document.getElementById('modalFarmName').textContent = detail.farm_name || 'N/A';
         document.getElementById('modalTreeName').textContent = detail.tree_name || 'N/A';
+        
         document.getElementById('modalAnalysisDate').textContent = new Date(detail.upload_date).toLocaleString();
         
         const classElement = document.getElementById('modalPredictedClass');
@@ -89,7 +119,9 @@ async function openImageDetail(imageId) {
         const rawOutputList = document.getElementById('modalRawOutputList');
         rawOutputList.innerHTML = '';
         
-        const sortedRaw = Object.entries(detail.raw_output)
+        const rawData = detail.raw_output && typeof detail.raw_output === 'object' ? detail.raw_output : {};
+
+        const sortedRaw = Object.entries(rawData)
             .sort(([, a], [, b]) => b - a);
 
         sortedRaw.forEach(([disease, probability]) => {
@@ -98,12 +130,54 @@ async function openImageDetail(imageId) {
             item.innerHTML = `<span>${disease}</span><strong>${(probability * 100).toFixed(2)}%</strong>`;
             rawOutputList.appendChild(item);
         });
-
+        
+        // Set up archive button event handler
+        archiveButton.onclick = null; 
+        archiveButton.textContent = 'Move to Trash Bin';
+        archiveButton.disabled = false;
+        archiveButton.onclick = () => handleArchiveImage(detail.image_id);
+        
         detailModal.style.display = 'block';
 
     } catch (error) {
-        console.error("Error fetching image details:", error);
-        displayMessage(error.message || "Failed to load image details.", true);
+        console.error(`Error fetching image details for ID ${imageId}:`, error);
+        displayMessage(error.message || "Failed to load image details. Check console for API error.", true);
+        detailModal.style.display = 'none';
+    }
+}
+
+/**
+ * Handles moving the current image from the gallery to the trash bin.
+ * @param {number} imageId 
+ */
+async function handleArchiveImage(imageId) {
+    const button = archiveButton;
+    const messageElement = document.getElementById('archiveMessage');
+    
+    if (!confirm(`Are you sure you want to move scan ID ${imageId} to the Trash Bin?`)) {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Archiving...';
+    messageElement.textContent = '';
+    
+    try {
+        const response = await TrashAPI.archiveImage(imageId);
+        messageElement.style.color = 'green';
+        messageElement.textContent = response.message || 'Image moved to Trash Bin successfully!';
+        
+        setTimeout(() => {
+            detailModal.style.display = "none";
+            loadGalleryImages(); 
+        }, 800);
+        
+    } catch (error) {
+        messageElement.style.color = 'red';
+        messageElement.textContent = error.message || 'Failed to move image to trash.';
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Move to Trash Bin';
     }
 }
 
@@ -111,12 +185,10 @@ async function openImageDetail(imageId) {
  * Sets up listeners for closing the modal.
  */
 function setupModalListeners() {
-    // Close button click
     closeBtn.onclick = function() {
         detailModal.style.display = "none";
     }
 
-    // Click outside the modal content
     window.onclick = function(event) {
         if (event.target == detailModal) {
             detailModal.style.display = "none";

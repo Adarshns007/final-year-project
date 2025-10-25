@@ -58,5 +58,3 @@ def get_image_detail_route(image_id, current_user_id):
     except Exception as e:
         current_app.logger.error(f"Error fetching image detail {image_id}: {e}")
         return jsonify({"message": "Failed to retrieve image details"}), 500
-
-# NOTE: You must update your app.py to import and register this new blueprint.

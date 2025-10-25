@@ -41,6 +41,8 @@
             color: var(--primary-color);
             border-top: 2px solid var(--secondary-color);
             border-bottom: none;
+            /* CRITICAL: Must be hidden by default */
+            display: none; 
         }
         .main-content h2 {
             color: var(--primary-color);
@@ -86,6 +88,27 @@
         .status-badge.healthy {
             background-color: #5cb85c; /* Green */
         }
+        /* FIX: New styling for the outbreak alert box */
+        .outbreak-alert-box {
+            display: none; /* Hidden by default */
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: var(--border-radius);
+            font-weight: bold;
+            border-left: 5px solid;
+            background-color: #fcf8e3; /* Light yellow background */
+            border-color: #8a6d3b; /* Brown border */
+            color: #8a6d3b; /* Brown text */
+        }
+        .outbreak-alert-box.risk {
+            background-color: #f2dede; /* Light red/pink background */
+            border-color: #a94442; /* Red border */
+            color: #a94442; /* Red text */
+        }
+        .outbreak-alert-box h4 {
+            margin: 0;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -94,7 +117,6 @@
             <h1>LeafGuard Dashboard</h1>
         </div>
         <nav class="nav-links">
-            <!-- FIX: Use an empty span. JS will dynamically set the user's name/email. -->
             <span id="welcome-user"></span> 
             <button id="logoutButton" class="btn secondary">Logout</button>
         </nav>
@@ -104,21 +126,29 @@
         <aside class="sidebar">
             <h3>Navigation</h3>
             <a href="/dashboard" class="active">Dashboard Overview</a>
-            <!-- Added ID for reliable JS navigation handling -->
             <a href="/scan" id="newScanLink" class="btn primary" style="margin: 10px 0; text-align: center;">New Scan</a>
             
-            <!-- CRITICAL FIX: Admin Link element placed at the bottom to guarantee JS finds it -->
             <a href="/admin/dashboard" id="adminLink" style="display:none;">Admin Panel</a>
             
             <a href="/gallery">Gallery & History</a>
+            <a href="/user/trash">Trash Bin</a>
             <a href="/settings">Settings</a>
+            <a href="/user/statistic">Statistics & Reports</a> 
+            <a href="/feedback">Feedback</a>
         </aside>
 
         <main class="main-content">
+            <div id="outbreakAlertContainer" class="outbreak-alert-box">
+                <h4>Geo-Fencing Outbreak Alert</h4>
+                <p id="outbreakAlertMessage">Checking for regional disease spikes...</p>
+            </div>
             <section>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2>My Farms</h2>
-                    <button id="addFarmButton" class="btn primary">+ Add New Farm</button>
+                    <div> 
+                        <button id="addFarmButton" class="btn primary">+ Add New Farm</button>
+                        <button id="addTreeButton" class="btn primary" style="margin-left: 10px;">+ Add New Tree</button>
+                    </div>
                 </div>
                 <div id="farmsContainer" class="farm-grid">
                     <p>Loading farms...</p>
@@ -148,12 +178,79 @@
                     <label for="newFarmLocation">Location Details (Optional)</label>
                     <input type="text" id="newFarmLocation">
                 </div>
+                <div class="form-group">
+                    <label for="newFarmLatitude">Latitude</label>
+                    <input type="number" step="0.00000001" id="newFarmLatitude" placeholder="Auto-detect or enter manually">
+                </div>
+                <div class="form-group">
+                    <label for="newFarmLongitude">Longitude</label>
+                    <input type="number" step="0.00000001" id="newFarmLongitude" placeholder="Auto-detect or enter manually">
+                </div>
+                
+                <button type="button" id="autoDetectLocation" class="btn secondary" style="width: 100%; margin-bottom: 15px;">
+                    Auto-Detect Current Location
+                </button>
+                
                 <button type="submit" class="btn primary">Save Farm</button>
                 <button type="button" class="btn secondary" onclick="document.getElementById('addFarmModal').style.display='none'">Cancel</button>
                 <div id="farmMessage" style="margin-top: 10px;"></div>
             </form>
         </div>
     </div>
+    
+    <div id="addTreeModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>Add New Tree</h3>
+            <form id="addTreeForm">
+                <div class="form-group">
+                    <label for="treeFarmSelect">Select Farm</label>
+                    <select id="treeFarmSelect" name="farm_id" required>
+                        </select>
+                </div>
+                <div class="form-group">
+                    <label for="newTreeName">Tree Name (e.g., Mango Tree Alpha)</label>
+                    <input type="text" id="newTreeName" required>
+                </div>
+                <div class="form-group">
+                    <label for="newTreeAge">Age (Years, Optional)</label>
+                    <input type="number" id="newTreeAge" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="newPlantingDate">Planting Date (Optional)</label>
+                    <input type="date" id="newPlantingDate">
+                </div>
+                <button type="submit" class="btn primary">Save Tree</button>
+                <button type="button" class="btn secondary" onclick="document.getElementById('addTreeModal').style.display='none'">Cancel</button>
+                <div id="treeMessage" style="margin-top: 10px;"></div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="editGeoModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>Edit Location for <span id="geoModalFarmName"></span></h3>
+            <form id="editGeoForm">
+                <input type="hidden" id="geoModalFarmId">
+                <div class="form-group">
+                    <label for="editFarmLatitude">Latitude</label>
+                    <input type="number" step="0.00000001" id="editFarmLatitude" placeholder="Auto-detect or enter manually" required>
+                </div>
+                <div class="form-group">
+                    <label for="editFarmLongitude">Longitude</label>
+                    <input type="number" step="0.00000001" id="editFarmLongitude" placeholder="Auto-detect or enter manually" required>
+                </div>
+                
+                <button type="button" id="editAutoDetectLocation" class="btn secondary" style="width: 100%; margin-bottom: 15px;">
+                    Auto-Detect Current Location
+                </button>
+                
+                <button type="submit" class="btn primary">Save Location</button>
+                <button type="button" class="btn secondary" onclick="document.getElementById('editGeoModal').style.display='none'">Cancel</button>
+                <div id="geoMessage" style="margin-top: 10px;"></div>
+            </form>
+        </div>
+    </div>
+    
     <style>
         /* Basic Modal Styling */
         .modal {

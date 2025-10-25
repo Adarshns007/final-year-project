@@ -1,3 +1,5 @@
+/* adarshns007/my-project/my-project-b969c78bfb99d884a2432d5eaa1211441070eb9e/src/static/css/style.css */
+
 /* General Resets and Variables */
 :root {
     --primary-color: #38761D; /* Deep Green */
@@ -7,6 +9,16 @@
     --card-background: #fff;
     --border-radius: 8px;
     --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* FIX: DARK THEME VARIABLES */
+.dark-theme {
+    --primary-color: #92b87e; /* Lighter Green for contrast */
+    --secondary-color: #2e6217; /* Darker accent */
+    --background-color: #1a1a1a; /* Dark background */
+    --text-color: #e0e0e0; /* Light text */
+    --card-background: #252525; /* Dark card background */
+    --shadow: 0 4px 8px rgba(0, 0, 0, 0.5); /* Stronger shadow */
 }
 
 * {
@@ -22,6 +34,22 @@ body {
     background-color: var(--background-color);
     min-height: 100vh;
 }
+
+/* Ensure colors are updated in dark mode */
+.dark-theme .main-header {
+    background-color: var(--card-background);
+}
+.dark-theme .nav-links a {
+    color: var(--text-color);
+}
+.dark-theme .nav-links a:hover:not(.btn) {
+    background-color: #333;
+}
+.dark-theme .hero-section {
+    background: linear-gradient(to right, var(--secondary-color), #444);
+}
+/* This is a simple example. More elements (e.g., specific inputs, borders) 
+   would need to be targeted with `.dark-theme element {}` for full theme coverage. */
 
 /* Header Styling */
 .main-header {

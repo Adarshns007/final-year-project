@@ -39,16 +39,15 @@ function getTreeIdFromUrl() {
 async function loadTreeDetails(treeId) {
     try {
         // 1. Fetch Tree Details (GET /api/user/tree/<tree_id>)
-        const treeDetail = await apiCall(`/api/user/tree/${treeId}`, 'GET');
+        // FIX: Use centralized UserAPI.getTreeDetails
+        const treeDetail = await UserAPI.getTreeDetails(treeId);
 
         // 2. Render Tree Metadata
         renderTreeMetadata(treeDetail);
         
-        // 3. Fetch Tree's Scan History (Must assume a new API endpoint for this, 
-        //    or filter the main gallery list on the client/server side).
-        //    We'll assume a dedicated endpoint is the cleaner way: 
-        //    GET /api/user/tree/<tree_id>/images (which needs a backend implementation)
-        const scanHistory = await fetchTreeImages(treeId); 
+        // 3. Fetch Tree's Scan History 
+        // FIX: Use centralized UserAPI.getTreeImages
+        const scanHistory = await UserAPI.getTreeImages(treeId); 
         renderScanHistory(scanHistory);
         
     } catch (error) {
@@ -126,19 +125,4 @@ function renderScanHistory(images) {
         
         historyContainer.appendChild(card);
     });
-}
-
-// --- Placeholder for API call to fetch tree's images ---
-// NOTE: This function requires a new backend route (e.g., /api/user/tree/<id>/images)
-async function fetchTreeImages(treeId) {
-    // This API endpoint still needs to be implemented on the Flask side.
-    const endpoint = `/api/user/tree/${treeId}/images`; 
-    try {
-        // Return dummy data if API call fails during development
-        return await apiCall(endpoint, 'GET');
-    } catch(e) {
-        console.warn(`[DEVELOPMENT NOTE] Missing API route: ${endpoint}`);
-        // Fallback or throw error
-        throw e;
-    }
 }

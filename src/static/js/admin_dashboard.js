@@ -4,6 +4,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Ensure user is authenticated and redirect if not.
     checkAuthAndRedirect(true); 
     
     let adminRoleCheck = false;
@@ -51,7 +52,7 @@ async function loadAdminMetrics() {
         const response = await adminApiCall('/api/admin/metrics', 'GET');
         const { metrics, disease_distribution } = response;
         
-        // --- 1. Render Metrics ---
+        // --- 1. Render Metrics (Populates the styled HTML grid) ---
         metricsGrid.innerHTML = `
             <div class="metric-card"><h4>${metrics.total_users}</h4><p>Total Users</p></div>
             <div class="metric-card"><h4>${metrics.total_scans}</h4><p>Total Scans</p></div>
@@ -70,7 +71,7 @@ async function loadAdminMetrics() {
 }
 
 /**
- * Renders the global disease distribution Pie Chart using Chart.js.
+ * Renders the global disease distribution Pie Chart using Chart.js, including percentages list.
  */
 function renderGlobalDiseaseChart(distributionData) {
     // Ensure the canvas context exists
@@ -81,6 +82,9 @@ function renderGlobalDiseaseChart(distributionData) {
     const labels = Object.keys(distributionData);
     const dataValues = Object.values(distributionData);
     
+    // Calculate total scans to determine percentages
+    const totalScans = dataValues.reduce((sum, value) => sum + value, 0);
+
     // Simple color assignment for chart segments
     const colors = [
         '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#5cb85c', '#c9c9c9'
@@ -92,7 +96,7 @@ function renderGlobalDiseaseChart(distributionData) {
     }
     
     globalDiseaseChartInstance = new Chart(ctx, {
-        type: 'doughnut',
+        type: 'doughnut', // Changed to doughnut for a modern look
         data: {
             labels: labels,
             datasets: [{
@@ -103,23 +107,56 @@ function renderGlobalDiseaseChart(distributionData) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false, // Allows chart to fill container nicely
             plugins: {
                 legend: {
-                    position: 'right',
+                    position: 'bottom', // Move legend to bottom
                     labels: {
                         boxWidth: 10,
                     }
                 },
-                title: {
-                    display: false,
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            // Show percentage in the tooltip
+                            const percentage = totalScans > 0 ? ((context.raw / totalScans) * 100).toFixed(1) + '%' : '0%';
+                            return `${label} ${context.raw} scans (${percentage})`;
+                        }
+                    }
                 }
             }
         }
     });
 
-    // Remove the simple list/legend placeholder (was originally #distributionList)
+    // RENDER PERCENTAGE LIST NEXT TO CHART 
     const distributionList = document.getElementById('distributionList');
-    if (distributionList) distributionList.innerHTML = ''; 
+    if (distributionList) {
+        distributionList.innerHTML = ''; 
+        
+        if (totalScans > 0) {
+            labels.forEach((label, index) => {
+                const count = dataValues[index];
+                const percentage = ((count / totalScans) * 100).toFixed(1);
+                
+                const listItem = document.createElement('li');
+                listItem.style.color = colors[index % colors.length]; // Use chart color for marker
+                listItem.style.fontWeight = 'bold';
+                listItem.style.padding = '3px 0';
+                
+                listItem.innerHTML = `
+                    <span style="display: inline-block; width: 10px; height: 10px; background-color: ${colors[index % colors.length]}; border-radius: 50%; margin-right: 5px;"></span>
+                    ${label}: ${count} (${percentage}%)
+                `;
+                distributionList.appendChild(listItem);
+            });
+        } else {
+             distributionList.innerHTML = '<li>No scan data available for distribution.</li>';
+        }
+    }
 }
 
 /**
@@ -127,6 +164,8 @@ function renderGlobalDiseaseChart(distributionData) {
  */
 async function loadAdminUsers() {
     const usersList = document.getElementById('usersList');
+    if (!usersList) return; // Prevent crash if element is missing
+    
     usersList.innerHTML = '<li>Loading users...</li>';
     
     try {
@@ -140,7 +179,7 @@ async function loadAdminUsers() {
             listItem.style.borderBottom = '1px dashed #eee';
             listItem.innerHTML = `
                 <span style="font-weight: bold;">${user.username}</span> 
-                (${user.email}) - Role: ${user.role}
+                (${user.email}) - Role: <span style="color: ${user.role === 'admin' ? 'red' : 'green'}; font-weight: bold;">${user.role.toUpperCase()}</span>
             `;
             usersList.appendChild(listItem);
         });

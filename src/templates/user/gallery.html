@@ -6,6 +6,7 @@
     <title>LeafGuard - Scan Gallery</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
+        /* FIX 1: Ensure gallery grid layout is active and containers are properly sized */
         .gallery-container {
             max-width: 1200px;
             margin: 40px auto;
@@ -45,17 +46,39 @@
         .status-badge.healthy { background-color: #5cb85c; }
         .status-badge.default { background-color: #f0ad4e; } /* Non-healthy diseases */
 
-        /* Modal for Image Detail View */
+        /* FIX 2: Ensure Modal CSS is fully defined for overlay display */
         .modal {
-            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8);
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.8); /* Dark backdrop */
         }
         .modal-content-lg {
-            background-color: #fefefe; margin: 5% auto; padding: 20px; border-radius: var(--border-radius); width: 90%; max-width: 1000px; 
-            display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;
+            background-color: #fefefe; 
+            margin: 5% auto; /* 5% from the top and centered horizontally */
+            padding: 20px; 
+            border-radius: var(--border-radius); 
+            width: 90%; 
+            max-width: 1000px; 
+            display: grid; 
+            grid-template-columns: 1fr 1.5fr; 
+            gap: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
         .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
         .close-btn:hover, .close-btn:focus { color: #000; text-decoration: none; cursor: pointer; }
         .modal-image { max-width: 100%; height: auto; border-radius: var(--border-radius); }
+        
+        /* Added archive message styling for the modal */
+        #archiveMessage {
+            margin-left: 10px; 
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -94,15 +117,18 @@
 
                 <h4 style="margin-top: 25px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Probability Breakdown</h4>
                 <div id="modalRawOutputList">
-                    </div>
-            </div>
+                </div>
+                
+                <div style="margin-top: 25px;">
+                    <button id="archiveButton" class="btn secondary">Move to Trash Bin</button>
+                    <span id="archiveMessage"></span>
+                </div>
+                </div>
         </div>
     </div>
 
     <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/api.js') }}"></script>
-    <!-- Removed redundant inline script checkAuthAndRedirect(true) as it is correctly handled 
-         inside gallery.js's DOMContentLoaded listener, preventing the ReferenceError. -->
     <script src="{{ url_for('static', filename='js/gallery.js') }}"></script>
 </body>
 </html>

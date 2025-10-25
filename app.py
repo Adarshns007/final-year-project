@@ -16,6 +16,7 @@ from backend.api.user_routes import user_bp
 from backend.api.scan_routes import scan_bp 
 from backend.api.admin_routes import admin_bp
 from backend.api.trash_routes import trash_bp
+from backend.api.gallery_routes import gallery_bp 
 
 # Import modules for global service assignment
 import backend.api.scan_routes as scan_routes 
@@ -48,6 +49,7 @@ def create_app(config_class=Config):
     app.register_blueprint(scan_bp, url_prefix='/api/scan')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(trash_bp, url_prefix='/api/trash')
+    app.register_blueprint(gallery_bp, url_prefix='/api/gallery') 
 
     # --- 2. Load Machine Learning Model ---
     app.logger.info("Starting ML model loading...")
@@ -67,7 +69,7 @@ def create_app(config_class=Config):
         if model_loaded:
             scan_routes.predict_service = PredictService()
         else:
-            scan_routes.predict_service = None # Set to None for graceful failure handling in scan_routes
+            scan_routes.predict_service = None 
             
         admin_routes_module.admin_model = AdminModel(
             disease_classes=app.config.get('DISEASE_CLASSES')
@@ -87,6 +89,15 @@ def create_app(config_class=Config):
     def signup_page():
         return render_template('auth/signup.html')
 
+    # FIX: Add routes for Forgot Password workflow
+    @app.route('/forgot-password')
+    def forgot_password_page():
+        return render_template('auth/forgot_password.html')
+
+    @app.route('/reset-password-confirm')
+    def reset_password_page():
+        return render_template('auth/reset_password.html')
+        
     @app.route('/dashboard')
     def dashboard_page():
         return render_template('user/dashboard.html')
@@ -123,12 +134,15 @@ def create_app(config_class=Config):
     
     @app.route('/admin/diseases')
     def admin_diseases_page():
-        return render_template('user/admin/diseases.html')
+        return render_template('user/admin/disease.html')
 
-    # FIX: Add missing admin users route
     @app.route('/admin/users')
     def admin_users_page():
         return render_template('user/admin/users.html') 
+
+    @app.route('/admin/images')
+    def admin_images_page():
+        return render_template('user/admin/images.html') 
 
     # --- User Utility Routes ---
 
@@ -138,8 +152,6 @@ def create_app(config_class=Config):
 
     @app.route('/user/trash')
     def user_trash_page():
-        # FIX: Corrected template filename from 'trash.html' to 'tash.html'
-        # to match the existing file in the project structure.
         return render_template('user/tash.html')
         
     # --- Route for Serving Uploaded Images ---

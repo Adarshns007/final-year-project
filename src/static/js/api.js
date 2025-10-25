@@ -112,43 +112,28 @@ async function apiCall(endpoint, method = 'GET', body = null, requiresAuth = tru
 const AuthAPI = {
     /**
      * Registers a new user.
-     * @param {string} username
-     * @param {string} email
-     * @param {string} password
-     * @returns {Promise<object>} Response data from signup.
      */
     signup: (username, email, password) => apiCall('/api/auth/signup', 'POST', { username, email, password }, false),
     
     /**
      * Authenticates a user and stores the received JWT token.
-     * @param {string} email
-     * @param {string} password
-     * @returns {Promise<object>} Response data from signin, including user info.
      */
     signin: async (email, password) => {
         try {
             const data = await apiCall('/api/auth/signin', 'POST', { email, password }, false);
-            console.log("AuthAPI.signin: Backend response data:", data); // Debugging log
             if (data && data.token) {
-                console.log("AuthAPI.signin: Token received, storing:", data.token); // Debugging log
                 window.setAuthToken(data.token); // Store the token globally
-            } else {
-                console.warn("AuthAPI.signin: No token found in backend response:", data); // Debugging log
-            }
+            } 
             return data;
         } catch (error) {
-            console.error("AuthAPI.signin: Error during signin process:", error); // Debugging log
             throw error; // Re-throw the error for UI handling
         }
     },
     
     /**
      * Logs out the user by removing the JWT token from local storage.
-     * @returns {void}
      */
     logout: async () => {
-        // Optionally call backend logout if it clears server-side sessions, but typically not needed for JWTs.
-        // await apiCall('/api/auth/logout', 'POST', null, true); 
         window.removeAuthToken(); // Remove token globally
         window.location.href = '/login'; // Redirect to login page
     }
@@ -157,25 +142,47 @@ const AuthAPI = {
 // 2. User Data Functions (Requires Auth - these endpoints need an Authorization header)
 const UserAPI = {
     getFarms: () => apiCall('/api/user/farm', 'GET'),
-    getGallery: () => apiCall('/api/scan/gallery', 'GET'), // Assuming gallery data is user-specific
-    createFarm: (farm_name, location_details) => apiCall('/api/user/farm', 'POST', { farm_name, location_details }),
+    getGallery: () => apiCall('/api/scan/gallery', 'GET'), 
+    
+    // FIX: Updated createFarm signature to include Lat/Lng
+    createFarm: (farm_name, location_details, latitude, longitude) => 
+        apiCall('/api/user/farm', 'POST', { farm_name, location_details, latitude, longitude }),
+    
+    // FIX: Updated Farm PUT for location editing
+    updateFarmLocation: (farm_id, latitude, longitude) => 
+        apiCall(`/api/user/farm/${farm_id}`, 'PUT', { latitude: latitude, longitude: longitude }),
+    
     getTreesByFarm: (farm_id) => apiCall(`/api/user/farm/${farm_id}/tree`, 'GET'),
+    
     createTree: (farm_id, tree_name, age_years, planting_date) => 
         apiCall('/api/user/tree', 'POST', { farm_id, tree_name, age_years, planting_date }),
+        
     getUserProfile: () => apiCall('/api/user/profile', 'GET'),
-    updateUserProfile: (username) => apiCall('/api/user', 'PUT', { username }),
-    updatePassword: (current_password, new_password) => apiCall('/api/user/password', 'PUT', { current_password, new_password }),
+    
     submitFeedback: (subject, message, rating) => apiCall('/api/user/feedback', 'POST', { subject, message, rating }),
+
+    // FIX: Added Geo-Fencing and Statistics APIs
+    getTreeDetails: (tree_id) => apiCall(`/api/user/tree/${tree_id}`, 'GET'),
+    getTreeImages: (tree_id) => apiCall(`/api/user/tree/${tree_id}/images`, 'GET'),
+    getStatistics: (startDate, endDate) => {
+        let endpoint = '/api/user/statistics';
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        
+        if (params.toString()) {
+            endpoint += `?${params.toString()}`;
+        }
+        return apiCall(endpoint, 'GET');
+    },
+    checkOutbreakAlert: () => apiCall('/api/user/outbreak-alert', 'GET'),
 };
 
 // 3. Scan Functions (Requires Auth - these endpoints need an Authorization header)
 const ScanAPI = {
     /**
      * Uploads an image for analysis.
-     * @param {FormData} formData - FormData object containing the image file.
-     * @returns {Promise<object>} Analysis result.
+     * @param {FormData} formData - FormData object containing the image file and optional coordinates.
      */
     uploadAndAnalyze: (formData) => apiCall('/api/scan/upload-and-analyze', 'POST', formData, true),
-    
-    // Add other scan-related API calls here as needed (e.g., get scan by ID, delete scan)
 };

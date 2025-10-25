@@ -2,11 +2,16 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // Check if the user is already logged in (redirect to dashboard if so)
-    checkAuthAndRedirect(false, true); // Don't redirect to login if logged out, but to dashboard if logged in.
+    checkAuthAndRedirect(false, true); 
 
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
     const messageDiv = document.getElementById('message');
+    
+    // FIX: Get the Forgot Password and Reset Password forms/elements
+    const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    const resetPasswordForm = document.getElementById('resetPasswordForm');
+    
 
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
@@ -18,11 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = loginForm.password.value;
 
             // Basic client-side validation using functions from utils.js
-            if (!validateEmail(email)) { // This function should now be available from utils.js
+            if (!validateEmail(email)) { 
                 messageDiv.textContent = 'Please enter a valid email address.';
                 return;
             }
-            if (!validatePassword(password)) { // This function should now be available from utils.js
+            if (!validatePassword(password)) { 
                 messageDiv.textContent = 'Password must be at least 6 characters.';
                 return;
             }
@@ -32,12 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 messageDiv.style.color = 'green';
                 messageDiv.textContent = response.message;
                 
-                // CRITICAL FIX: Increased the delay to 300ms. This gives the browser 
-                // more time to complete the asynchronous localStorage.setItem() and 
-                // prevent the dashboard's authentication check from failing immediately.
                 setTimeout(() => { 
                     window.location.href = '/dashboard';
-                }, 300); // Increased delay from 100ms to 300ms
+                }, 300); 
 
             } catch (error) {
                 console.error("Login failed:", error);
@@ -55,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const username = signupForm.username.value;
             const email = signupForm.email.value;
             const password = signupForm.password.value;
-            // NOTE: Assuming the 'confirmPassword' field is now correctly added to signup.html
             const confirmPassword = signupForm.confirmPassword.value;
 
             // Basic client-side validation using functions from utils.js
@@ -63,11 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 messageDiv.textContent = 'Username must be at least 3 characters.';
                 return;
             }
-            if (!validateEmail(email)) { // This function should now be available from utils.js
+            if (!validateEmail(email)) { 
                 messageDiv.textContent = 'Please enter a valid email address.';
                 return;
             }
-            if (!validatePassword(password)) { // This function should now be available from utils.js
+            if (!validatePassword(password)) { 
                 messageDiv.textContent = 'Password must be at least 6 characters.';
                 return;
             }
@@ -86,6 +87,77 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error("Signup failed:", error);
                 messageDiv.textContent = error.message || "Signup failed.";
+            }
+        });
+    }
+    
+    // FIX: Forgot Password Form Submission
+    if (forgotPasswordForm) {
+        forgotPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = forgotPasswordForm.email.value;
+            const fpMessage = document.getElementById('fpMessage');
+            
+            try {
+                const response = await apiCall('/api/auth/forgot-password', 'POST', { email }, false);
+                fpMessage.style.color = 'green';
+                
+                // FIX: Display the clickable reset URL for demo
+                const messageText = response.message + `<br>For demo purposes, click this link to reset your password:<br><a href="${response.reset_url}" target="_blank">${response.reset_url}</a>`;
+                
+                fpMessage.innerHTML = messageText;
+                
+            } catch (error) {
+                fpMessage.style.color = 'red';
+                fpMessage.textContent = error.message || "Failed to initiate reset.";
+            }
+        });
+    }
+
+    // FIX: Reset Password Form Submission
+    if (resetPasswordForm) {
+        // FIX: Autofill the code from the URL on load
+        const urlParams = new URLSearchParams(window.location.search);
+        const codeFromUrl = urlParams.get('code');
+        if (codeFromUrl) {
+            document.getElementById('resetCode').value = codeFromUrl;
+        }
+
+        resetPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = resetPasswordForm.email.value;
+            const code = resetPasswordForm.resetCode.value;
+            const newPassword = resetPasswordForm.newPassword.value;
+            const confirmNewPassword = resetPasswordForm.confirmNewPassword.value;
+            const rpMessage = document.getElementById('rpMessage');
+
+            if (newPassword !== confirmNewPassword) {
+                rpMessage.textContent = 'New passwords do not match.';
+                return;
+            }
+            if (!validatePassword(newPassword)) { // Added validation check
+                 rpMessage.textContent = 'Password must be at least 6 characters.';
+                 return;
+            }
+            
+            try {
+                // FIX: Send email, code, and new password
+                const response = await apiCall('/api/auth/reset-password', 'POST', { 
+                    email: email,
+                    code: code,
+                    new_password: newPassword
+                }, false); 
+                
+                rpMessage.style.color = 'green';
+                rpMessage.textContent = response.message;
+                
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+
+            } catch (error) {
+                rpMessage.style.color = 'red';
+                rpMessage.textContent = error.message || "Password reset failed. Check email and code.";
             }
         });
     }

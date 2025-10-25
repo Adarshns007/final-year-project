@@ -23,6 +23,9 @@
             padding: 20px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
+            /* FIX: Ensure cards grow vertically if needed */
+            display: flex;
+            flex-direction: column; 
         }
         .stat-card h3 {
             color: var(--primary-color);
@@ -30,10 +33,26 @@
             padding-bottom: 10px;
             margin-bottom: 15px;
         }
-        #diseaseChart, #treeScanChart {
-            height: 300px; /* Placeholder for chart library integration */
+        
+        /* FIX: Constrain the chart height and container size */
+        #diseaseChartContainer, #treeScanChartContainer {
+            position: relative;
+            height: 350px; /* Set a consistent height for the chart container */
+            width: 100%;
+            padding: 10px;
             background-color: #f7f7f7;
             border-radius: 4px;
+            flex-grow: 1; /* Allow container to use available space */
+        }
+        
+        #diseaseLegend, #treeScanLegend {
+            list-style: none;
+            padding-top: 15px;
+            font-size: 0.9em;
+            /* FIX: Added top border for separation from charts */
+            border-top: 1px dashed #eee; 
+            margin-top: 15px;
+            padding-top: 15px;
         }
     </style>
 </head>
@@ -56,15 +75,19 @@
         
         <div class="stats-grid">
             <div class="stat-card">
-                <h3>Disease Distribution (All Time)</h3>
-                <div id="diseaseChart">Chart placeholder...</div>
-                <ul id="diseaseLegend" style="list-style: none; padding-top: 15px;"></ul>
+                <h3>Disease Distribution</h3>
+                <div id="diseaseChartContainer">
+                    <canvas id="diseaseChartCanvas"></canvas>
+                </div>
+                <ul id="diseaseLegend">Loading data...</ul>
             </div>
             
             <div class="stat-card">
                 <h3>Scans by Tree</h3>
-                <div id="treeScanChart">Chart placeholder...</div>
-                <ul id="treeScanLegend" style="list-style: none; padding-top: 15px;"></ul>
+                <div id="treeScanChartContainer">
+                    <canvas id="treeScanChartCanvas"></canvas>
+                </div>
+                <ul id="treeScanLegend">Loading data...</ul>
             </div>
         </div>
     </div>

@@ -4,12 +4,31 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     checkAuthAndRedirect(true);
+    // FIX 1: Apply saved theme immediately on load
+    applySavedTheme(); 
     loadUserProfile();
     setupAccountForm();
     setupPasswordForm();
+    setupPreferencesForm(); 
 });
 
 let currentUserData = {};
+let newEmailPending = null; 
+
+// FIX 2: Function to apply theme class based on storage
+function applySavedTheme() {
+    const savedTheme = localStorage.getItem('userTheme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+    } else {
+        document.body.classList.remove('dark-theme');
+    }
+    // Optionally set the selector value if it exists
+    const themeSelect = document.getElementById('themeSelect');
+    if (themeSelect) {
+        themeSelect.value = savedTheme;
+    }
+}
 
 /**
  * Fetches current user profile data (email, username) and populates the forms.
@@ -17,7 +36,6 @@ let currentUserData = {};
 async function loadUserProfile() {
     try {
         // This assumes a GET /api/user route exists to fetch the current user's details
-        // (Similar to fetching user data after successful token decoding, but dedicated GET endpoint)
         const user = await apiCall('/api/user/profile', 'GET', null, true); 
         
         currentUserData = user;
@@ -34,40 +52,91 @@ async function loadUserProfile() {
  */
 function setupAccountForm() {
     const form = document.getElementById('updateAccountForm');
+    const sendVerificationButton = document.getElementById('sendVerificationButton');
+    const confirmEmailChangeButton = document.getElementById('confirmEmailChangeButton');
+    const verificationCodeGroup = document.getElementById('verificationCodeGroup');
+    const messageContainer = document.getElementById('account-message');
+
     if (form) {
+        // --- Step 1: Handle Username Change / Send Verification ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const newUsername = document.getElementById('newUsername').value;
-            const newEmail = document.getElementById('newEmail').value;
+            const newEmail = document.getElementById('newEmail').value.trim();
             
             if (newUsername.trim() === '') {
-                return displayMessage("Username cannot be empty.", true);
+                return displayMessage("Username cannot be empty.", true, messageContainer);
+            }
+            if (newEmail !== '' && !validateEmail(newEmail)) {
+                 return displayMessage("Please enter a valid new email address.", true, messageContainer);
             }
             
             try {
-                // Determine if only username changed
+                // Case A: Only username changed
                 if (newUsername !== currentUserData.username && newEmail === '') {
-                    // Update username only (assuming a PUT /api/user endpoint handles this)
                     await apiCall('/api/user', 'PUT', { username: newUsername }, true);
                     currentUserData.username = newUsername; // Update local state
-                    displayMessage("Username updated successfully.", false);
+                    displayMessage("Username updated successfully.", false, messageContainer);
                     
-                } else if (newEmail !== '' && newEmail !== currentUserData.email) {
-                    // Changing email requires verification (complex flow, simplified here)
+                } 
+                // Case B: Initiate Email Change
+                else if (newEmail !== '' && newEmail !== currentUserData.email) {
                     
-                    // 1. Call backend to send verification code to new email
-                    // This requires implementing the /api/user/change-email/send-code route
+                    sendVerificationButton.disabled = true;
+                    sendVerificationButton.textContent = 'Sending...';
+
+                    // Call backend to send verification code to new email
                     await apiCall('/api/user/change-email/send-code', 'POST', { new_email: newEmail }, true);
                     
-                    displayMessage(`Verification code sent to ${newEmail}. Check your inbox to confirm the change.`, false);
-                    // Usually, this would open a modal for code entry, handled by separate JS.
+                    newEmailPending = newEmail; // Store the email pending verification
+                    verificationCodeGroup.style.display = 'block'; // Show code input field
+                    sendVerificationButton.style.display = 'none'; // Hide send button
+                    
+                    displayMessage(`Verification code sent to ${newEmail}. Enter it below to confirm. (MOCK CODE: 123456)`, false, messageContainer);
                     
                 } else {
-                    displayMessage("No changes detected in username or email.", false);
+                    displayMessage("No substantial changes detected.", false, messageContainer);
                 }
             } catch (error) {
-                displayMessage(error.message || "Failed to update account details.", true);
+                displayMessage(error.message || "Failed to update account details or send code.", true, messageContainer);
+            } finally {
+                sendVerificationButton.disabled = false;
+                sendVerificationButton.textContent = 'Save Account Changes / Send Verification';
+            }
+        });
+        
+        // --- Step 2: Handle Verification Code Confirmation ---
+        confirmEmailChangeButton.addEventListener('click', async () => {
+            const code = document.getElementById('verificationCode').value.trim();
+            
+            if (!newEmailPending) {
+                return displayMessage("Please initiate email change first.", true, messageContainer);
+            }
+            if (code.length !== 6) {
+                return displayMessage("Code must be 6 digits.", true, messageContainer);
+            }
+            
+            confirmEmailChangeButton.disabled = true;
+            confirmEmailChangeButton.textContent = 'Confirming...';
+
+            try {
+                // Call backend to confirm the code and update the email
+                const response = await apiCall('/api/user/change-email/confirm', 'POST', { 
+                    new_email: newEmailPending, 
+                    code: code 
+                }, true);
+                
+                displayMessage(response.message, false, messageContainer);
+                
+                // Success: Force logout to prompt re-login with new credentials
+                setTimeout(AuthAPI.logout, 1500); 
+
+            } catch (error) {
+                displayMessage(error.message || "Verification failed. Check the code.", true, messageContainer);
+            } finally {
+                confirmEmailChangeButton.disabled = false;
+                confirmEmailChangeButton.textContent = 'Confirm Email Change';
             }
         });
     }
@@ -115,13 +184,48 @@ function setupPasswordForm() {
     }
 }
 
-// NOTE: Since the message-container ID is global, we need to adjust 
-// the helper in utils.js to accept an optional specific container.
+/**
+ * FIX: Sets up the submission handler for the Preferences section.
+ */
+function setupPreferencesForm() {
+    const saveButton = document.getElementById('savePreferencesButton'); 
+    const messageContainer = document.getElementById('preferences-message'); 
 
-// --- Helper adjustment (MUST BE IMPLEMENTED IN utils.js) ---
-/*
-function displayMessage(message, isError = false, container = null) {
-    const messageContainer = container || document.getElementById('message-container');
-    // ... rest of logic
+    if (saveButton) {
+        saveButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
+
+            try {
+                // FIX: Get elements by specific ID/known structure
+                const theme = document.getElementById('themeSelect').value;
+                const emailAlerts = document.getElementById('emailAlertsCheckbox').checked;
+                const lowConfidenceAlerts = document.getElementById('lowConfidenceAlertsCheckbox').checked;
+
+                const preferencesData = {
+                    theme: theme,
+                    email_alerts: emailAlerts,
+                    low_confidence_alerts: lowConfidenceAlerts
+                };
+
+                // 1. Call the mock backend API (for demonstration/logging)
+                await apiCall('/api/user/preferences', 'PUT', preferencesData, true);
+                
+                // 2. Client-side Persistence and Application (THE FUNCTIONALITY FIX)
+                localStorage.setItem('userTheme', theme);
+                applySavedTheme(); // Apply the theme immediately
+
+                // Display success message
+                displayMessage("Preferences saved! Theme applied.", false, messageContainer);
+                
+            } catch (error) {
+                 displayMessage(error.message || "Failed to save preferences.", true, messageContainer);
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Save Preferences';
+            }
+        });
+    }
 }
-*/

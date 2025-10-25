@@ -13,6 +13,14 @@
             max-width: 900px;
             margin: 40px auto;
         }
+        /* FIX: Ensure the navigation panel looks defined */
+        .settings-nav {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 10px 0;
+            height: fit-content;
+        }
         .settings-nav a {
             display: block;
             padding: 10px 15px;
@@ -20,11 +28,21 @@
             color: var(--text-color);
             border-left: 3px solid transparent;
             margin-bottom: 5px;
+            transition: all 0.2s;
+        }
+        .settings-nav a:hover:not(.active) {
+            background-color: #f5f5f5;
         }
         .settings-nav a.active {
             border-left: 3px solid var(--primary-color);
             background-color: #f0f0f0;
             font-weight: bold;
+        }
+        .settings-content {
+            /* FIX: Ensure sections stack nicely without merging */
+            display: flex;
+            flex-direction: column;
+            gap: 30px; 
         }
         .settings-section {
             background-color: var(--card-background);
@@ -37,6 +55,14 @@
             margin-bottom: 25px;
             border-bottom: 1px solid #eee;
             padding-bottom: 10px;
+        }
+        /* Style for the verification code input area */
+        #verificationCodeGroup {
+            display: none; /* Hidden by default */
+            margin-top: 15px;
+            padding: 15px;
+            border: 1px dashed var(--secondary-color);
+            border-radius: var(--border-radius);
         }
     </style>
 </head>
@@ -67,15 +93,23 @@
                         <label for="newUsername">Username</label>
                         <input type="text" id="newUsername" required>
                     </div>
+                    
                     <div class="form-group">
                         <label for="newEmail">New Email (Requires Verification)</label>
                         <input type="email" id="newEmail" placeholder="Enter new email address">
                     </div>
-                    <button type="submit" class="btn primary">Save Account Changes</button>
+
+                    <div id="verificationCodeGroup">
+                        <label for="verificationCode">Verification Code</label>
+                        <input type="text" id="verificationCode" placeholder="Enter 6-digit code">
+                        <button type="button" id="confirmEmailChangeButton" class="btn primary" style="margin-top: 10px;">Confirm Email Change</button>
+                    </div>
+
+                    <button type="submit" id="sendVerificationButton" class="btn primary">Save Account Changes / Send Verification</button>
                 </form>
             </section>
             
-            <section id="security" class="settings-section" style="margin-top: 30px;">
+            <section id="security" class="settings-section">
                 <h2>Security</h2>
                 <div id="security-message" class="message-container" style="margin-bottom: 15px;"></div>
 
@@ -96,17 +130,23 @@
                 </form>
             </section>
             
-            <section id="preferences" class="settings-section" style="margin-top: 30px;">
+            <section id="preferences" class="settings-section">
                 <h2>Preferences</h2>
-                <p>Theme selection, notifications, and other user preferences will go here.</p>
+                <div id="preferences-message" class="message-container" style="margin-bottom: 15px;"></div> 
+                
+                <p>Theme: <select id="themeSelect"><option value="light">Light (Default)</option><option value="dark">Dark</option></select></p>
+                <p>Notification Settings:</p>
+                <ul>
+                    <li><input type="checkbox" id="emailAlertsCheckbox" checked> Email alerts for new scan results</li>
+                    <li><input type="checkbox" id="lowConfidenceAlertsCheckbox"> Low confidence score alerts only</li>
+                </ul>
+                <button id="savePreferencesButton" class="btn secondary">Save Preferences</button>
             </section>
         </main>
     </div>
 
     <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/api.js') }}"></script>
-    <!-- Removed redundant inline script checkAuthAndRedirect(true) as it is correctly handled 
-         inside settings.js's DOMContentLoaded listener, preventing the ReferenceError. -->
     <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 </body>
 </html>

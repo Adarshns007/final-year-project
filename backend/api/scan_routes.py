@@ -1,8 +1,9 @@
+# adarshns007/my-project/my-project-b969c78bfb99d884a2432d5eaa1211441070eb9e/backend/api/scan_routes.py
 from flask import Blueprint, request, jsonify, current_app, url_for
 from werkzeug.utils import secure_filename
 from backend.api.user_routes import token_required 
 from backend.models.image_model import ImageModel
-from backend.models.disease_model import DiseaseModel # Import is necessary
+from backend.models.disease_model import DiseaseModel 
 from backend.ml_model.predict_service import PredictService 
 import os
 import uuid
@@ -10,8 +11,8 @@ import uuid
 # Create Blueprint
 scan_bp = Blueprint('scan_bp', __name__)
 image_model = ImageModel()
-disease_model = DiseaseModel() # INSTANTIATE MODEL HERE
-predict_service = None # This will be set by app.py
+disease_model = DiseaseModel() 
+predict_service = None 
 
 def allowed_file(filename):
     """Checks if the file extension is allowed."""
@@ -33,6 +34,9 @@ def upload_and_analyze(current_user_id):
 
     image_file = request.files['image']
     tree_id = request.form.get('tree_id') 
+    # FIX: Retrieve real-time scan coordinates from form data
+    scan_latitude = request.form.get('scan_latitude')
+    scan_longitude = request.form.get('scan_longitude')
 
     if image_file.filename == '':
         return jsonify({"message": "No selected file"}), 400
@@ -55,17 +59,19 @@ def upload_and_analyze(current_user_id):
             
             # 3. Fetch Disease Details
             predicted_class_name = analysis_result['predicted_class']
-            # FIX: Access the globally instantiated model
             disease_details = disease_model.get_disease_by_name(predicted_class_name) 
             
             # 4. Save Image Record to MySQL
             relative_file_path = f"uploads/{unique_filename}" 
             
+            # FIX: Pass scan coordinates to the model
             image_id = image_model.create_image(
                 user_id=current_user_id, 
                 file_path=relative_file_path, 
                 tree_id=tree_id if tree_id else None, 
-                status='analyzed'
+                status='analyzed',
+                scan_latitude=scan_latitude if scan_latitude else None,
+                scan_longitude=scan_longitude if scan_longitude else None
             )
             
             if not image_id:
@@ -99,6 +105,8 @@ def upload_and_analyze(current_user_id):
             }), 200
 
         except ValueError as ve:
+            if os.path.exists(save_path):
+                os.remove(save_path) 
             return jsonify({"message": str(ve)}), 400
         except Exception as e:
             current_app.logger.error(f"Image analysis failed: {e}")

@@ -51,5 +51,3 @@ def restore_image_route(image_id, current_user_id):
     except Exception as e:
         current_app.logger.error(f"Error restoring image {image_id}: {e}")
         return jsonify({"message": "Server error during restoration"}), 500
-
-# Note: Permanent delete route would also be added here.

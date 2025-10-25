@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafGuard - Admin Users</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 30px;
+            padding-top: 20px;
+        }
+        .admin-sidebar {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+        /* FIX: Style the management links for vertical layout and spacing */
+        .admin-sidebar h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        .admin-sidebar a {
+            display: block; /* Make links stack vertically */
+            padding: 10px 0;
+            text-decoration: none;
+            color: var(--text-color);
+            border-bottom: 1px dashed #eee;
+        }
+        .admin-sidebar a.active {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--card-background);
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .data-table th {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+        .status-badge.verified { background-color: #5cb85c; }
+        .status-badge.unverified { background-color: #f0ad4e; }
+        .status-badge.admin { background-color: #d9534f; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <h1>Admin User Management</h1>
+        <a href="/dashboard" class="btn secondary">Back to User Dashboard</a>
+    </header>
+
+    <div class="content-wrapper admin-layout">
+        <aside class="admin-sidebar">
+            <h3>Management</h3>
+            <a href="/admin/dashboard">Overview</a>
+            <a href="/admin/users" class="active">Users</a>
+            <a href="/admin/images">All Scans</a>
+            <a href="/admin/diseases">Disease Info</a>
+            <a href="/admin/feedbacks">Feedback</a>
+        </aside>
+
+        <main class="main-content">
+            <h2 style="color: var(--primary-color); margin-bottom: 20px;">Registered Users</h2>
+            
+            <div id="message-container" class="message-container" style="margin-bottom: 20px;"></div>
+
+            <div class="table-responsive">
+                <table id="usersTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="6">Loading user data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthAndRedirect(true); 
+            
+            if (isLoggedIn() && decodeJwt(getAuthToken()).role === 'admin') {
+                loadAllUsers();
+            } else {
+                alert('Access Denied.');
+                window.location.href = '/dashboard';
+            }
+        });
+
+        const adminApiCall = (endpoint, method = 'GET', body = null) => apiCall(endpoint, method, body, true);
+        const usersTableBody = document.getElementById('usersTableBody');
+
+        async function loadAllUsers() {
+            try {
+                const users = await adminApiCall('/api/admin/users', 'GET');
+                renderUsers(users);
+            } catch (error) {
+                usersTableBody.innerHTML = '<tr><td colspan="6" style="color:red;">Failed to load users: ' + (error.message || 'Server error') + '</td></tr>';
+            }
+        }
+
+        function renderUsers(users) {
+            usersTableBody.innerHTML = '';
+            if (users.length === 0) {
+                usersTableBody.innerHTML = '<tr><td colspan="6">No registered users found.</td></tr>';
+                return;
+            }
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                const statusClass = user.is_verified ? 'verified' : 'unverified';
+                const roleClass = user.role;
+                const createdAt = new Date(user.created_at).toLocaleDateString();
+
+                row.innerHTML = `
+                    <td>${user.user_id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td><span class="status-badge ${roleClass}">${user.role.toUpperCase()}</span></td>
+                    <td><span class="status-badge ${statusClass}">${user.is_verified ? 'VERIFIED' : 'UNVERIFIED'}</span></td>
+                    <td>${createdAt}</td>
+                `;
+                usersTableBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>

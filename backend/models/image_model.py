@@ -1,3 +1,4 @@
+# adarshns007/my-project/my-project-b969c78bfb99d884a2432d5eaa1211441070eb9e/backend/models/image_model.py
 from backend.services.database_service import DatabaseService
 import json
 
@@ -9,17 +10,15 @@ class ImageModel:
     def __init__(self):
         self.db = DatabaseService()
 
-    def create_image(self, user_id, file_path, tree_id=None, status='analyzed'):
+    def create_image(self, user_id, file_path, tree_id=None, status='analyzed', scan_latitude=None, scan_longitude=None):
         """
-        Inserts a new image record.
-        Returns the new image_id on success.
+        Inserts a new image record with optional scan-specific coordinates.
         """
-        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         query = """
-            INSERT INTO images (user_id, file_path, tree_id, status)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO images (user_id, file_path, tree_id, status, scan_latitude, scan_longitude)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """
-        params = (user_id, file_path, tree_id, status)
+        params = (user_id, file_path, tree_id, status, scan_latitude, scan_longitude)
         return self.db.execute_query(query, params, commit=True)
 
     def save_prediction(self, image_id, predicted_class, confidence_score, raw_output):
@@ -40,10 +39,10 @@ class ImageModel:
         """
         Retrieves image and its prediction details for a specific user.
         """
-        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         query = """
             SELECT 
                 i.*, 
+                i.scan_latitude, i.scan_longitude, 
                 p.predicted_class, 
                 p.confidence_score, 
                 p.raw_output, 
@@ -71,10 +70,10 @@ class ImageModel:
         """
         Retrieves a list of all analyzed images for the user's gallery.
         """
-        # user_id = int(user_id) # REMOVED REDUNDANT CAST
         query = """
             SELECT 
                 i.image_id, i.upload_date, i.file_path, i.tree_id,
+                i.scan_latitude, i.scan_longitude, 
                 p.predicted_class, p.confidence_score,
                 t.tree_name
             FROM images i
@@ -90,11 +89,11 @@ class ImageModel:
         """
         Retrieves all analyzed images linked to a specific tree_id.
         """
-        # No user_id cast needed here, but ensure tree_id is integer
         tree_id = int(tree_id)
         query = """
             SELECT 
                 i.image_id, i.upload_date, i.file_path,
+                i.scan_latitude, i.scan_longitude, 
                 p.predicted_class, p.confidence_score
             FROM images i
             JOIN predictions p ON i.image_id = p.image_id
@@ -103,3 +102,24 @@ class ImageModel:
         """
         params = (tree_id,)
         return self.db.execute_query(query, params)
+        
+    def get_all_system_scans(self):
+        """
+        Retrieves a list of all analyzed images for the Admin gallery view.
+        """
+        query = """
+            SELECT 
+                i.image_id, i.upload_date, i.file_path, i.status AS image_status,
+                i.scan_latitude, i.scan_longitude, 
+                p.predicted_class, p.confidence_score,
+                u.user_id AS scan_user_id, u.username AS scan_username,
+                t.tree_name AS scan_tree_name,
+                f.farm_name AS scan_farm_name
+            FROM images i
+            JOIN predictions p ON i.image_id = p.image_id
+            JOIN users u ON i.user_id = u.user_id
+            LEFT JOIN trees t ON i.tree_id = t.tree_id
+            LEFT JOIN farms f ON t.farm_id = f.farm_id
+            ORDER BY i.upload_date DESC
+        """
+        return self.db.execute_query(query)

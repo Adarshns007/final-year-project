@@ -131,3 +131,28 @@ INSERT INTO diseases (name, description, organic_treatment, chemical_treatment) 
 ('Sooty Mould', 'Black coating on leaves resulting from honeydew excretion by pests.', 
     'Control underlying pests (e.g., scale insects) using neem oil or insecticidal soap.', 
     'Apply Malathion to control pests, then wash the leaves.');
+
+    INSERT INTO trees (farm_id, tree_name, age_years) 
+VALUES (
+    (SELECT farm_id FROM farms WHERE user_id = 1 LIMIT 1), 
+    'Old Mango Tree 01', 
+    5
+);
+
+SELECT user_id, email, username, role 
+FROM users 
+WHERE role = 'admin';
+
+UPDATE users SET role = 'admin' WHERE email = 'adarshns2026@gmail.com';
+
+-- Run this command in your MySQL environment
+ALTER TABLE farms
+ADD COLUMN latitude DECIMAL(10, 8),
+ADD COLUMN longitude DECIMAL(11, 8);
+
+-- Run this command in your MySQL environment
+ALTER TABLE images
+ADD COLUMN scan_latitude DECIMAL(10, 8),
+ADD COLUMN scan_longitude DECIMAL(11, 8);
+
+--

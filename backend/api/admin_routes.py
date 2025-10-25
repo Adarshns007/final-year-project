@@ -1,11 +1,11 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, url_for
 from backend.api.user_routes import token_required # Re-use generic token check
 from backend.models.admin_model import AdminModel
 from functools import wraps
-# Removed: import jwt (manual decoding is fragile and was causing initialization errors)
 from backend.models.feedback_model import FeedbackModel
 from backend.models.disease_model import DiseaseModel
 from backend.models.user_model import UserModel # Needed to check user role
+from backend.models.image_model import ImageModel # FIX: Import ImageModel
 
 # Create Blueprint
 admin_bp = Blueprint('admin_bp', __name__)
@@ -13,6 +13,7 @@ admin_model = None
 feedback_model = FeedbackModel()
 disease_model = DiseaseModel()
 user_model = UserModel() # Initialize UserModel for role lookups
+image_model = ImageModel() # FIX: Initialize ImageModel
 
 # --- Admin Authorization Decorator (FIXED) ---
 def admin_required(f):
@@ -68,6 +69,50 @@ def get_all_users_route(current_user_id):
         current_app.logger.error(f"Admin users error: {e}")
         return jsonify({"message": "Failed to retrieve user list"}), 500
     
+# ==============================================================================
+# --- Scan Management Routes (/api/admin/scans) ---
+# ==============================================================================
+@admin_bp.route('/scans', methods=['GET'])
+@admin_required
+def get_all_scans_route(current_user_id):
+    """FIX: Retrieves a list of all analyzed images across all users for admin view."""
+    try:
+        scans = image_model.get_all_system_scans()
+        
+        # FIX: Handle case where DB returns None on failure
+        if scans is None:
+            current_app.logger.error("Database query for all system scans returned None. Returning empty list.")
+            scans = []
+            
+        # Format the image URLs and dates for the frontend
+        formatted_scans = []
+        for scan in scans:
+            # FIX 1: Map new aliases back to expected frontend names
+            scan['user_id'] = scan.pop('scan_user_id', None)
+            scan['username'] = scan.pop('scan_username', 'N/A')
+            scan['status'] = scan.pop('image_status', 'unknown') 
+            scan['tree_name'] = scan.pop('scan_tree_name', None) 
+            scan['farm_name'] = scan.pop('scan_farm_name', None) 
+
+            # FIX 2: Dynamic URL formatting (safely)
+            file_path_db = scan.get('file_path')
+            
+            if not file_path_db or file_path_db == '#':
+                 scan['file_path'] = url_for('serve_uploaded_file', filename='placeholder.png', _external=True) 
+            else:
+                 filename = file_path_db.split('/')[-1]
+                 scan['file_path'] = url_for('serve_uploaded_file', filename=filename, _external=True)
+                 
+            scan['upload_date'] = scan['upload_date'].isoformat() if scan.get('upload_date') else None
+            
+            formatted_scans.append(scan)
+
+        return jsonify(formatted_scans), 200
+    except Exception as e:
+        current_app.logger.error(f"Admin all scans error: Critical exception during data fetching/formatting: {e}")
+        return jsonify({"message": f"Server Error (500): Failed to process scan data. Exception: {str(e)}"}), 500
+
+
 # ==============================================================================
 # --- Feedback Management Routes (/api/admin/feedbacks) ---
 # ==============================================================================

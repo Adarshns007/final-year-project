@@ -1,4 +1,4 @@
-# adarshns007/my-project/my-project-b969c78bfb99d884a2432d5eaa1211441070eb9e/backend/models/statistics_model.py
+# backend/models/statistics_model.py
 from backend.services.database_service import DatabaseService
 from typing import Optional, Dict
 from flask import current_app
@@ -124,6 +124,50 @@ class StatisticsModel:
                     'disease': disease
                 })
         return scores
+
+    def get_regional_disease_data(self, target_latitude: float, target_longitude: float, max_distance_km: float = 5.0) -> Dict:
+        """
+        Retrieves aggregated, anonymous disease distribution data within a radius 
+        of the target location, excluding the current user's data.
+        """
+        # 1. Fetch all recent diseased scans across the entire system with coordinates.
+        # We look for all scans that have any coordinate attached (either scan-specific or farm-specific).
+        # We explicitly exclude 'Healthy' results from this dataset.
+        query = """
+            SELECT 
+                p.predicted_class, i.upload_date, 
+                COALESCE(f.latitude, i.scan_latitude) AS latitude, 
+                COALESCE(f.longitude, i.scan_longitude) AS longitude, 
+                f.user_id as farm_user_id
+            FROM images i
+            JOIN predictions p ON i.image_id = p.image_id
+            LEFT JOIN trees t ON i.tree_id = t.tree_id
+            LEFT JOIN farms f ON t.farm_id = f.farm_id
+            WHERE p.predicted_class != 'Healthy' 
+                AND (f.latitude IS NOT NULL OR i.scan_latitude IS NOT NULL)
+        """
+        all_diseased_scans = self.db.execute_query(query) or []
+
+        disease_counts = {}
+        
+        # 2. Iterate through all scans, calculate distance, and aggregate
+        for scan in all_diseased_scans:
+            try:
+                # Ensure coordinates are float before math calculation
+                scan_lat = float(scan['latitude'])
+                scan_lon = float(scan['longitude'])
+            except (TypeError, ValueError):
+                continue 
+
+            # Calculate distance
+            distance = haversine_distance(target_latitude, target_longitude, scan_lat, scan_lon)
+            
+            if distance <= max_distance_km:
+                disease = scan['predicted_class']
+                disease_counts[disease] = disease_counts.get(disease, 0) + 1
+
+        return disease_counts
+
 
     def check_geo_outbreak_risk(self, user_id: int, max_distance_km: float = 5.0) -> Dict:
         """

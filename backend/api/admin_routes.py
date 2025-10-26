@@ -5,11 +5,11 @@ from functools import wraps
 from backend.models.feedback_model import FeedbackModel
 from backend.models.disease_model import DiseaseModel
 from backend.models.user_model import UserModel # Needed to check user role
-from backend.models.image_model import ImageModel # FIX: Import ImageModel
+from backend.models.image_model import ImageModel 
 
 # Create Blueprint
 admin_bp = Blueprint('admin_bp', __name__)
-admin_model = None
+admin_model = None # Initialized to None, injected by app.py later
 feedback_model = FeedbackModel()
 disease_model = DiseaseModel()
 user_model = UserModel() # Initialize UserModel for role lookups
@@ -42,6 +42,17 @@ def admin_required(f):
 @admin_required
 def get_metrics_route(current_user_id):
     """Retrieves high-level statistics and disease distribution for the admin dashboard."""
+    
+    # CRITICAL FIX: Explicitly check for uninitialized dependency before calling methods
+    if admin_model is None:
+        current_app.logger.error("AdminModel dependency is not initialized. Returning empty data.")
+        # Return a non-200 code to inform the client of a server issue, but include a data structure to avoid client-side crash
+        return jsonify({
+            "metrics": {},
+            "disease_distribution": {},
+            "message": "Metrics service is temporarily unavailable (Dependency error)."
+        }), 503 
+
     try:
         metrics = admin_model.get_system_metrics()
         distribution = admin_model.get_disease_distribution()
@@ -62,6 +73,10 @@ def get_metrics_route(current_user_id):
 @admin_required
 def get_all_users_route(current_user_id):
     """Retrieves a list of all users on the platform."""
+    # FIX: Ensure admin_model is available before calling its methods
+    if admin_model is None:
+         return jsonify({"message": "User management service unavailable"}), 503
+
     try:
         users = admin_model.get_all_users()
         return jsonify(users), 200

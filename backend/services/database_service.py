@@ -1,3 +1,5 @@
+
+
 import mysql.connector
 from flask import current_app, g
 from mysql.connector import Error
@@ -83,9 +85,9 @@ class DatabaseService:
             # CRITICAL LOGGING: Log the exact MySQL error and the query that failed
             app.logger.error(f"MySQL Query Error: {e} | Query: {query} | Params: {params}")
             
-            # CRITICAL FIX: Re-raise the error immediately in DEBUG mode to trigger Flask's error reporting.
-            if app.config.get('DEBUG'):
-                 raise e 
+            # CRITICAL FIX: DO NOT RE-RAISE IN DEBUG MODE. This allows the Flask route's try-except block to catch it or the model to receive a safe 'None'.
+            # if app.config.get('DEBUG'):
+            #      raise e 
             
             if commit and conn and conn.is_connected():
                 conn.rollback()

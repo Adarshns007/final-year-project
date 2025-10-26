@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafGuard - Regional Disease Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+        .report-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 30px; /* Increased padding for better look */
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        .report-card {
+            padding: 20px 0;
+        }
+        #regionalChartContainer {
+            position: relative;
+            height: 400px; 
+            width: 100%;
+        }
+        #locationInputGroup {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            align-items: flex-end;
+        }
+        /* Styles for the new table created by JavaScript */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .data-table th, .data-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .data-table th {
+            background-color: var(--secondary-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <h1>Regional Disease Report (5km Radius)</h1>
+        <a href="/dashboard" class="btn secondary">Back to Dashboard</a>
+    </header>
+
+    <div class="content-wrapper">
+        <div class="report-container">
+            <p style="margin-bottom: 15px;">This report shows aggregated, anonymous disease data from all users within 5km of the specified location. *No individual user or farm data is shown.*</p>
+            
+            <div id="message-container" class="message-container" style="margin-bottom: 20px;"></div>
+
+            <div id="locationInputGroup">
+                <div class="form-group" style="flex-grow: 1;">
+                    <label for="reportLatitude">Latitude</label>
+                    <input type="number" step="0.00000001" id="reportLatitude" placeholder="e.g., 12.807" required>
+                </div>
+                <div class="form-group" style="flex-grow: 1;">
+                    <label for="reportLongitude">Longitude</label>
+                    <input type="number" step="0.00000001" id="reportLongitude" placeholder="e.g., 77.678" required>
+                </div>
+                <button class="btn primary" id="autoDetectLocation">Detect Current GPS</button>
+                <button class="btn secondary" id="generateReport">Generate Report</button>
+            </div>
+
+            <div class="report-card">
+                <h3 style="color: var(--primary-color);">Diseases Detected in 5km Radius</h3>
+                <div id="regionalChartContainer">
+                    <canvas id="regionalDiseaseChartCanvas"></canvas>
+                    <p id="chartMessage" style="text-align: center; margin-top: 50px;">Enter coordinates and click 'Generate Report' to view data.</p>
+                </div>
+            </div>
+            
+            <div id="regionalDataSummary">
+                </div>
+            
+            <div id="treatmentSummary">
+                </div>
+            
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script>checkAuthAndRedirect(true);</script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/regional_report.js') }}"></script>
+</body>
+</html>

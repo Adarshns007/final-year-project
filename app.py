@@ -126,6 +126,7 @@ def create_app(config_class=Config):
     
     @app.route('/admin/dashboard')
     def admin_dashboard_page():
+        # FIX: Ensure the correct ADMIN dashboard template is rendered
         return render_template('user/admin/dashboard.html')
     
     @app.route('/admin/feedbacks')
@@ -142,6 +143,7 @@ def create_app(config_class=Config):
 
     @app.route('/admin/images')
     def admin_images_page():
+        # FIX: Route for the Admin All Scans page
         return render_template('user/admin/images.html') 
 
     # --- User Utility Routes ---
@@ -153,6 +155,10 @@ def create_app(config_class=Config):
     @app.route('/user/trash')
     def user_trash_page():
         return render_template('user/tash.html')
+        
+    @app.route('/regional-report') # <-- NEW ROUTE
+    def regional_report_page():
+        return render_template('user/regional_report.html')
         
     # --- Route for Serving Uploaded Images ---
     

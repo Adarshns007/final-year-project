@@ -327,6 +327,18 @@ function setupEventListeners() {
         });
     }
 
+    // --- CRITICAL FIX: Admin Link Click Handler ---
+    const adminLink = document.getElementById('adminLink');
+    if (adminLink) {
+        adminLink.addEventListener('click', (e) => {
+            // FIX: Prevent default anchor tag behavior to ensure the navigation 
+            // is handled by JS and not blocked by background processes.
+            e.preventDefault();
+            window.location.href = '/admin/dashboard';
+        });
+    }
+
+
     // --- New Scan Button ---
     const newScanLink = document.getElementById('newScanLink');
     if (newScanLink) {

@@ -6,6 +6,7 @@ from backend.models.image_model import ImageModel
 from backend.models.feedback_model import FeedbackModel
 from backend.models.statistics_model import StatisticsModel
 from backend.models.user_model import UserModel 
+from backend.models.disease_model import DiseaseModel # <-- ADDED IMPORT
 from functools import wraps
 from flask_jwt_extended import jwt_required, get_jwt_identity 
 from backend.api.geo_utils import haversine_distance # Import Haversine utility
@@ -18,6 +19,7 @@ image_model = ImageModel()
 feedback_model = FeedbackModel()
 statistics_model = StatisticsModel()
 user_model = UserModel()
+disease_model = DiseaseModel() # <-- INITIALIZED
 
 # --- Authentication Decorator (FINAL FIX APPLIED HERE) ---
 def token_required(fn):
@@ -44,7 +46,7 @@ def token_required(fn):
 
 # ==============================================================================
 # --- Farm Routes (/api/user/farm) ---
-# ==============================================================================
+# ... (omitted existing farm routes for brevity) ...
 
 @user_bp.route('/farm', methods=['POST'])
 @token_required
@@ -119,7 +121,7 @@ def manage_farm_route(farm_id, current_user_id):
 
 # ==============================================================================
 # --- Tree Routes (/api/user/tree) ---
-# ==============================================================================
+# ... (omitted existing tree routes for brevity) ...
 
 @user_bp.route('/tree', methods=['POST'])
 @token_required
@@ -193,8 +195,8 @@ def manage_tree_route(tree_id, current_user_id):
         return jsonify({"message": "Delete failed"}), 500
 
 # ==============================================================================
-# --- Gallery/Image Detail Route & Tree History (unchanged) ---
-# [content omitted for brevity]
+# --- Gallery/Image Detail Route & Tree History (omitted for brevity) ---
+# ...
 # ==============================================================================
 
 @user_bp.route('/gallery/<int:image_id>', methods=['GET'])
@@ -230,8 +232,8 @@ def get_tree_images_route(tree_id, current_user_id):
     return jsonify(images), 200
 
 # ==============================================================================
-# --- User Profile and Settings Routes (/api/user) ---
-# [content omitted for brevity]
+# --- User Profile and Settings Routes (/api/user) (omitted for brevity) ---
+# ...
 # ==============================================================================
 
 @user_bp.route('/profile', methods=['GET'])
@@ -303,7 +305,8 @@ def update_user_preferences_route(current_user_id):
 
 
 # ==============================================================================
-# --- Geo-Fencing Alert Route (/api/user/outbreak-alert) ---
+# --- Geo-Fencing Alert Route (/api/user/outbreak-alert) (omitted for brevity) ---
+# ...
 # ==============================================================================
 @user_bp.route('/outbreak-alert', methods=['GET'])
 @token_required
@@ -319,9 +322,65 @@ def get_outbreak_alert_route(current_user_id):
         return jsonify({"risk_found": False, "message": "Could not check outbreak status."}), 500
 
 # ==============================================================================
-# --- Feedback Routes & Statistics Routes (unchanged) ---
-# [content omitted for brevity]
+# --- Regional Statistics Route (UPDATED) ---
 # ==============================================================================
+@user_bp.route('/regional-stats', methods=['GET'])
+@token_required
+def get_regional_statistics_route(current_user_id):
+    """
+    Retrieves anonymous, aggregated disease statistics within a 5km radius 
+    of the location provided by query parameters, and includes treatment details 
+    for the top 2 diseases.
+    """
+    try:
+        latitude = request.args.get('latitude')
+        longitude = request.args.get('longitude')
+        
+        if not latitude or not longitude:
+             return jsonify({"message": "Latitude and longitude are required for regional analysis."}), 400
+
+        target_lat = float(latitude)
+        target_lon = float(longitude)
+        
+        # 1. Get aggregated data
+        regional_data = statistics_model.get_regional_disease_data(target_lat, target_lon, max_distance_km=5.0)
+        
+        top_treatments = []
+        if regional_data:
+            # 2. Sort the data by count (descending)
+            sorted_diseases = sorted(regional_data.items(), key=lambda item: item[1], reverse=True)
+            
+            # 3. Get the top 2 diseases
+            for disease_name, count in sorted_diseases[:2]:
+                treatment = disease_model.get_disease_by_name(disease_name)
+                if treatment:
+                    top_treatments.append({
+                        "name": disease_name,
+                        "count": count,
+                        "organic": treatment['organic_treatment'],
+                        "chemical": treatment['chemical_treatment']
+                    })
+
+        if not regional_data:
+            return jsonify({"regional_data": {}, "top_treatments": [], "message": "No diseased scans found in the 5km radius."}), 200
+
+        return jsonify({
+            "regional_data": regional_data, 
+            "top_treatments": top_treatments, # <-- NEW FIELD
+            "message": "Regional data retrieved successfully."
+        }), 200
+        
+    except ValueError:
+        return jsonify({"message": "Invalid latitude or longitude format."}), 400
+    except Exception as e:
+        current_app.logger.error(f"Regional Statistics error for user {current_user_id}: {e}")
+        return jsonify({"message": "Could not retrieve regional statistics."}), 500
+        
+# ==============================================================================
+# --- Feedback Routes & Statistics Routes (omitted for brevity) ---
+# ...
+# ==============================================================================
+
 @user_bp.route('/feedback', methods=['POST'])
 @token_required
 def create_feedback_route(current_user_id):

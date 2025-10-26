@@ -22,11 +22,17 @@ class AdminModel:
         """Retrieves high-level counts for the admin dashboard overview."""
         metrics = {}
         
+        # Helper function to execute query and safely return count or 0 (THE FIX)
+        def get_count(query):
+            result = self.db.execute_query(query, fetch_one=True)
+            # FIX: Check if result is not None before accessing 'count' key
+            return result['count'] if result and 'count' in result else 0
+        
         # Fetch counts using efficient aggregate queries
-        metrics['total_users'] = self.db.execute_query("SELECT COUNT(*) AS count FROM users", fetch_one=True)['count']
-        metrics['total_scans'] = self.db.execute_query("SELECT COUNT(*) AS count FROM images", fetch_one=True)['count']
-        metrics['total_farms'] = self.db.execute_query("SELECT COUNT(*) AS count FROM farms", fetch_one=True)['count']
-        metrics['total_trees'] = self.db.execute_query("SELECT COUNT(*) AS count FROM trees", fetch_one=True)['count']
+        metrics['total_users'] = get_count("SELECT COUNT(*) AS count FROM users")
+        metrics['total_scans'] = get_count("SELECT COUNT(*) AS count FROM images")
+        metrics['total_farms'] = get_count("SELECT COUNT(*) AS count FROM farms")
+        metrics['total_trees'] = get_count("SELECT COUNT(*) AS count FROM trees")
         
         return metrics
 

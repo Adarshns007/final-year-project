@@ -4,26 +4,36 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Ensure user is authenticated and redirect if not.
-    checkAuthAndRedirect(true); 
     
-    let adminRoleCheck = false;
+    // CRITICAL FIX: Do NOT use checkAuthAndRedirect(true) here as its internal setTimeout 
+    // introduces a race condition with the synchronous role check below.
+    
+    // --- 1. Perform immediate Authentication and Authorization Check ---
+    let isAuthenticated = isLoggedIn();
+    let isAdmin = false;
 
-    // Perform client-side role check immediately
-    if (isLoggedIn()) {
+    if (isAuthenticated) {
         const token = getAuthToken();
         const payload = decodeJwt(token);
         
         if (payload && payload.role === 'admin') {
-            adminRoleCheck = true;
-            loadAdminData();
+            isAdmin = true;
         }
     }
 
-    if (!adminRoleCheck) {
-        alert('Access Denied. Redirecting to user dashboard.');
-        window.location.href = '/dashboard';
+    if (!isAdmin) {
+        // If not logged in or not admin, show access denied and redirect immediately.
+        alert('Access Denied. Admin privileges required.');
+        
+        // Decide where to redirect: login if token is missing, dashboard if role is wrong
+        const redirectPath = isAuthenticated ? '/dashboard' : '/login';
+        
+        window.location.href = redirectPath;
+        return; // Stop further script execution
     }
+    
+    // --- 2. If check passes, load data ---
+    loadAdminData();
 });
 
 // Global chart instance for admin dashboard
@@ -50,23 +60,40 @@ async function loadAdminMetrics() {
     try {
         // GET /api/admin/metrics
         const response = await adminApiCall('/api/admin/metrics', 'GET');
-        const { metrics, disease_distribution } = response;
+        
+        // CRITICAL FIX: Safely extract properties using default empty objects
+        const metrics = response.metrics || {};
+        const disease_distribution = response.disease_distribution || {};
         
         // --- 1. Render Metrics (Populates the styled HTML grid) ---
+        // FIX: Use optional chaining or fallback to '0' to prevent display errors
         metricsGrid.innerHTML = `
-            <div class="metric-card"><h4>${metrics.total_users}</h4><p>Total Users</p></div>
-            <div class="metric-card"><h4>${metrics.total_scans}</h4><p>Total Scans</p></div>
-            <div class="metric-card"><h4>${metrics.total_farms}</h4><p>Total Farms</p></div>
-            <div class="metric-card"><h4>${metrics.total_trees}</h4><p>Total Trees</p></div>
+            <div class="metric-card"><h4>${metrics.total_users || 0}</h4><p>Total Users</p></div>
+            <div class="metric-card"><h4>${metrics.total_scans || 0}</h4><p>Total Scans</p></div>
+            <div class="metric-card"><h4>${metrics.total_farms || 0}</h4><p>Total Farms</p></div>
+            <div class="metric-card"><h4>${metrics.total_trees || 0}</h4><p>Total Trees</p></div>
         `;
         
         // --- 2. Render Disease Distribution Chart ---
-        renderGlobalDiseaseChart(disease_distribution);
+        if (Object.keys(disease_distribution).length > 0) {
+            renderGlobalDiseaseChart(disease_distribution);
+        } else {
+            // Display error/no data message if distribution is empty
+            const chartParent = document.getElementById('globalDiseaseChartCanvas').parentElement;
+            chartParent.innerHTML = '<p style="text-align:center;">No disease data available for charting.</p>';
+            const distributionList = document.getElementById('distributionList');
+            if (distributionList) distributionList.innerHTML = '<li>No scan data available for distribution.</li>';
+        }
+
 
     } catch (error) {
         console.error("Error loading admin metrics:", error);
+        // FIX: Ensure the error message is displayed when API call fails
         metricsGrid.innerHTML = '<p style="grid-column: 1 / -1; color:red;">Failed to load metrics. Check API status.</p>';
-        document.getElementById('globalDiseaseChartCanvas').parentElement.innerHTML = 'Error loading chart data.';
+        const distributionList = document.getElementById('distributionList');
+        if (distributionList) distributionList.innerHTML = '<li>Error loading chart data.</li>';
+        const chartParent = document.getElementById('globalDiseaseChartCanvas').parentElement;
+        chartParent.innerHTML = 'Error loading chart data.';
     }
 }
 
